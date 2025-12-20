@@ -18,14 +18,23 @@ const NewQuestion = () => {
             .then(res => {
                 if (res.data && res.data.data) {
                     const u = res.data.data;
-                    if (u.cvhtHoTen) {
-                        setCvhtInfo(`${u.cvhtMa || 'N/A'} - ${u.cvhtHoTen}`);
+
+                    // --- PHẦN SỬA ĐỔI: Map đúng field theo API mới ---
+                    // API trả về: "maCoVan": "B00003", "tenCoVan": "Nguyễn Quốc Việt"
+                    if (u.tenCoVan && u.maCoVan) {
+                        setCvhtInfo(`${u.maCoVan} - ${u.tenCoVan}`);
+                    } else if (u.tenCoVan) {
+                        setCvhtInfo(u.tenCoVan);
                     } else {
                         setCvhtInfo('Chưa có Cố vấn học tập');
                     }
+                    // ------------------------------------------------
                 }
             })
-            .catch(err => console.error("Error fetching profile", err));
+            .catch(err => {
+                console.error("Error fetching profile", err);
+                setCvhtInfo('Không thể lấy thông tin CVHT');
+            });
     }, []);
 
     const handleFileChange = (e) => {
