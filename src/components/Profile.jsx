@@ -4,7 +4,8 @@ import './QuestionList.css'; // Re-use common styles
 import './Profile.css';
 import api, { userApi, authApi } from '../services/api';
 
-const Profile = ({ userRole }) => {
+const Profile = () => {
+    const userRole = localStorage.getItem('role');
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [profileData, setProfileData] = useState({
@@ -279,18 +280,6 @@ const Profile = ({ userRole }) => {
                                         </div>
                                     </div>
                                 )}
-
-                                <div className="detail-item">
-                                    <div className="detail-icon">
-                                        <Calendar size={20} />
-                                    </div>
-                                    <div className="detail-content">
-                                        <label className="flex-label">
-                                            Ngày sinh <Lock size={12} className="lock-icon" title="Không thể chỉnh sửa" />
-                                        </label>
-                                        <p className="read-only-text">{profileData.dob}</p>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 

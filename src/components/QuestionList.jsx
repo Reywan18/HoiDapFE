@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './QuestionList.css';
-import api, { questionApi } from '../services/api';
+import api, { userApi, conversationApi } from '../services/api';
 
-const QuestionList = ({ onNavigate }) => {
+const QuestionList = () => {
+    const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
@@ -26,19 +28,27 @@ const QuestionList = ({ onNavigate }) => {
     const fetchQuestions = async () => {
         setLoading(true);
         try {
-            const response = await questionApi.getAll({
+            // Lấy profile để biết mã SV
+            const pRes = await userApi.getProfile();
+            const maSv = pRes.data.data.maDinhDanh;
+            
+            if (!maSv) {
+                console.error("Không tìm thấy maSv trong profile");
+                return;
+            }
+
+            const response = await conversationApi.getStudentConversations(maSv, {
                 page: page,
-                size: 10,
-                sort: 'ngayGui,desc',
-                keyword: searchTerm
+                size: 10
             });
+            
             if (response.data && response.data.data) {
                 const pageData = response.data.data;
                 setQuestions(pageData.content || []);
                 setTotalPages(pageData.totalPages);
             }
         } catch (error) {
-            console.error("Failed to fetch questions", error);
+            console.error("Failed to fetch conversations", error);
         } finally {
             setLoading(false);
         }
@@ -52,26 +62,20 @@ const QuestionList = ({ onNavigate }) => {
 
     const getStatusClass = (status) => {
         switch (String(status).toUpperCase()) {
-            case 'PENDING': return 'pending'; // Đang chờ
-            case 'PROCESSING': return 'processing'; // Đang xử lý
-            case 'ANSWER':
-            case 'ANSWERED':
-            case 'COMPLETED':
-            case '1': return 'completed'; // Đã trả lời/Xong
-            case 'REJECTED': return 'rejected';
+            case 'WAITING_FOR_CVHT': return 'pending'; 
+            case 'CHATTING_WITH_CVHT': return 'processing'; 
+            case 'CHATTING_WITH_BOT': return 'processing';
+            case 'RESOLVED': return 'completed'; 
             default: return '';
         }
     };
 
     const getStatusLabel = (status) => {
         switch (String(status).toUpperCase()) {
-            case 'PENDING': return 'Đang chờ';
-            case 'PROCESSING': return 'Đang xử lý';
-            case 'ANSWER':
-            case 'ANSWERED':
-            case '1': return 'Đã trả lời';
-            case 'COMPLETED': return 'Hoàn thành';
-            case 'REJECTED': return 'Từ chối';
+            case 'WAITING_FOR_CVHT': return 'Chờ phản hồi';
+            case 'CHATTING_WITH_CVHT': return 'Đang trực tiếp';
+            case 'CHATTING_WITH_BOT': return 'Với trợ lý ảo';
+            case 'RESOLVED': return 'Đã giải quyết';
             default: return status;
         }
     };
@@ -79,9 +83,11 @@ const QuestionList = ({ onNavigate }) => {
     return (
         <main className="main-content">
             <header className="top-bar">
+                <div className="top-bar-left"></div>
                 <div className="top-bar-right">
-                    <button className="icon-btn"><Search size={20} /></button>
-                    <button className="icon-btn"><Bell size={20} /><span className="badge">1</span></button>
+                    <div className="user-indicator">
+                        <span className="indicator-text">Câu hỏi của tôi</span>
+                    </div>
                 </div>
             </header>
 
@@ -102,7 +108,7 @@ const QuestionList = ({ onNavigate }) => {
 
                     <button
                         className="btn-primary"
-                        onClick={() => onNavigate && onNavigate('new-question')}
+                        onClick={() => navigate('/sinhvien/new-question')}
                     >
                         <Plus size={18} style={{ marginRight: '0.5rem' }} />
                         Đặt câu hỏi mới
@@ -129,15 +135,15 @@ const QuestionList = ({ onNavigate }) => {
                                 ) : (
                                     questions.map((q, index) => (
                                         <tr
-                                            key={q.maCauHoi}
-                                            onClick={() => onNavigate('question-detail', { id: q.maCauHoi })}
+                                            key={q.id}
+                                            onClick={() => navigate(`/sinhvien/question-detail/${q.id}`, { state: { title: q.tieuDe } })}
                                             style={{ cursor: 'pointer' }}
                                             className="question-row"
                                         >
                                             <td>{index + 1 + (page * 10)}</td>
                                             <td className="subject-cell">{q.tieuDe}</td>
-                                            <td className="date-cell">{formatDate(q.ngayGui)}</td>
-                                            <td className="update-cell">{formatDate(q.ngayCapNhatCuoi || q.ngayGui)}</td>
+                                            <td className="date-cell">{formatDate(q.ngayTao)}</td>
+                                            <td className="update-cell">{formatDate(q.ngayCapNhatCuoi || q.ngayTao)}</td>
                                             <td>
                                                 <span className={`status-badge ${getStatusClass(q.trangThai)}`}>
                                                     {getStatusLabel(q.trangThai)}

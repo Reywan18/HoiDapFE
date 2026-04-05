@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Accessibility, Key, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 import buildingImg from '../assets/Ảnh_bìa_tlu.png';
 import api, { authApi } from '../services/api';
@@ -11,7 +12,8 @@ const OfficeIcon = () => (
     </svg>
 );
 
-const Login = ({ onLogin }) => {
+const Login = () => {
+    const navigate = useNavigate();
     // Steps: 'initial' | 'email' | 'password'
     const [step, setStep] = useState('initial');
     const [email, setEmail] = useState('');
@@ -67,7 +69,11 @@ const Login = ({ onLogin }) => {
                 }
 
                 localStorage.setItem('role', role);
-                onLogin(role);
+                if (role === 'cvht') {
+                    navigate('/cvht');
+                } else {
+                    navigate('/sinhvien');
+                }
             } else {
                 setError('Phản hồi không hợp lệ từ máy chủ');
             }

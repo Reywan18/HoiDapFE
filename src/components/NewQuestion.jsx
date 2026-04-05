@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import api, { userApi, questionApi } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import api, { userApi, conversationApi } from '../services/api';
 import { Send, Paperclip, X } from 'lucide-react';
 import './QuestionList.css'; // Common styles
 import './NewQuestion.css';
 
 const NewQuestion = () => {
+    const navigate = useNavigate();
     const [title, setTitle] = useState('');
     const [department, setDepartment] = useState('HOCTAP'); // Default domain/field
     const [content, setContent] = useState('');
@@ -20,7 +22,6 @@ const NewQuestion = () => {
                     const u = res.data.data;
 
                     // --- PHẦN SỬA ĐỔI: Map đúng field theo API mới ---
-                    // API trả về: "maCoVan": "B00003", "tenCoVan": "Nguyễn Quốc Việt"
                     if (u.tenCoVan && u.maCoVan) {
                         setCvhtInfo(`${u.maCoVan} - ${u.tenCoVan}`);
                     } else if (u.tenCoVan) {
@@ -51,25 +52,21 @@ const NewQuestion = () => {
 
         setLoading(true);
         try {
-            const formData = new FormData();
-            formData.append('tieuDe', title);
-            formData.append('noiDung', content);
-            formData.append('linhVuc', department);
-            if (selectedFile) {
-                formData.append('file', selectedFile);
-            }
+            const requestData = {
+                tieuDe: title,
+                noiDung: content
+            };
 
-            const response = await questionApi.create(formData);
+            const response = await conversationApi.createConversation(requestData);
 
             if (response.data && response.data.status === 200) {
-                alert('Gửi câu hỏi thành công!');
-                // Reset form
-                setTitle('');
-                setContent('');
-                setSelectedFile(null);
+                // Điều hướng thẳng tới màn hình Chat vừa tạo
+                navigate(`/sinhvien/question-detail/${response.data.data.id}`, { 
+                    state: { title: title } 
+                });
             }
         } catch (error) {
-            console.error('Lỗi khi gửi câu hỏi:', error);
+            console.error('Lỗi khi gửi:', error);
             alert('Gửi thất bại. Vui lòng thử lại.');
         } finally {
             setLoading(false);

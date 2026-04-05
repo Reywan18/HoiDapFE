@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, MessageSquare, PlusCircle, BookOpen, User, LogOut } from 'lucide-react';
+import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2 } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
-const Sidebar = ({ activePage, onNavigate }) => {
-    // Default to 'my-question' if undefined
-    const current = activePage || 'my-question';
+const Sidebar = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const current = location.pathname;
+    const role = localStorage.getItem('role') || 'student';
 
     const [userData, setUserData] = useState({
-        name: "Sinh viên",
-        role: "Sinh viên"
+        name: role === 'cvht' ? "Cố vấn học tập" : "Sinh viên",
+        role: role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long"
     });
 
     useEffect(() => {
@@ -24,23 +27,36 @@ const Sidebar = ({ activePage, onNavigate }) => {
 
                 const payload = JSON.parse(jsonPayload);
                 setUserData({
-                    name: payload.hoTen || payload.name || "Sinh viên",
-                    role: "Đại học Thăng Long"
+                    name: payload.hoTen || payload.name || (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên"),
+                    role: role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long"
                 });
             } catch (e) {
                 console.error("Token decode error", e);
             }
         }
-    }, []);
+    }, [role]);
 
     const handleLogout = (e) => {
         e.preventDefault();
         if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
-            window.location.href = '/';
+            navigate('/login');
         }
     };
+
+    // Định nghĩa Menu theo Role
+    const navItems = role === 'cvht' ? [
+        { id: 'profile', to: '/cvht/profile', icon: User, label: 'Hồ sơ cá nhân' },
+        { id: 'knowledge', to: '/cvht/knowledge', icon: BookOpen, label: 'Kho tri thức (FAQ)' },
+        { id: 'pending', to: '/cvht/pending', icon: FileText, label: 'Danh sách câu hỏi' },
+        { id: 'reports', to: '/cvht/reports', icon: BarChart2, label: 'Báo cáo thống kê' },
+    ] : [
+        { id: 'profile', to: '/sinhvien/profile', icon: User, label: 'Hồ sơ cá nhân' },
+        { id: 'faq', to: '/sinhvien/faq', icon: BookOpen, label: 'Kho kiến thức (FAQ)' },
+        { id: 'new-question', to: '/sinhvien/new-question', icon: PlusCircle, label: 'Tạo câu hỏi mới' },
+        { id: 'my-question', to: '/sinhvien/my-question', icon: MessageSquare, label: 'Câu hỏi của tôi' },
+    ];
 
     return (
         <aside className="sidebar">
@@ -53,7 +69,10 @@ const Sidebar = ({ activePage, onNavigate }) => {
 
             <div className="user-profile">
                 <div className="avatar">
-                    <img src={`https://ui-avatars.com/api/?name=${userData.name.replace(/ /g, '+')}&background=random`} alt="User" />
+                    <img 
+                        src={`https://ui-avatars.com/api/?name=${userData.name.replace(/ /g, '+')}&background=${role === 'cvht' ? '0284c7' : 'random'}&color=fff`} 
+                        alt="User" 
+                    />
                 </div>
                 <div className="user-info">
                     <h3 className="user-name">{userData.name}</h3>
@@ -62,38 +81,16 @@ const Sidebar = ({ activePage, onNavigate }) => {
             </div>
 
             <nav className="sidebar-nav">
-                <a
-                    href="#"
-                    className={`nav-item ${current === 'profile' ? 'active' : ''}`}
-                    onClick={(e) => { e.preventDefault(); onNavigate('profile'); }}
-                >
-                    <User size={20} />
-                    <span>Hồ sơ cá nhân</span>
-                </a>
-                <a
-                    href="#"
-                    className={`nav-item ${current === 'faq' ? 'active' : ''}`}
-                    onClick={(e) => { e.preventDefault(); onNavigate('faq'); }}
-                >
-                    <BookOpen size={20} />
-                    <span>Kho kiến thức (FAQ)</span>
-                </a>
-                <a
-                    href="#"
-                    className={`nav-item ${current === 'new-question' ? 'active' : ''}`}
-                    onClick={(e) => { e.preventDefault(); onNavigate('new-question'); }}
-                >
-                    <PlusCircle size={20} />
-                    <span>Tạo câu hỏi mới</span>
-                </a>
-                <a
-                    href="#"
-                    className={`nav-item ${current === 'my-question' ? 'active' : ''}`}
-                    onClick={(e) => { e.preventDefault(); onNavigate('my-question'); }}
-                >
-                    <MessageSquare size={20} />
-                    <span>Câu hỏi của tôi</span>
-                </a>
+                {navItems.map((item) => (
+                    <Link
+                        key={item.id}
+                        to={item.to}
+                        className={`nav-item ${current.includes(item.id) ? 'active' : ''}`}
+                    >
+                        <item.icon size={20} />
+                        <span>{item.label}</span>
+                    </Link>
+                ))}
             </nav>
 
             <div className="sidebar-footer">

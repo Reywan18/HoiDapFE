@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, User, Clock, CheckCircle, BookOpen, Layers, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './QuestionList.css';
 import './CVHTQuestions.css';
 import api from '../services/api';
 
-const ProcessingQuestions = ({ onNavigate }) => {
+const ProcessingQuestions = () => {
+    const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
@@ -97,7 +99,7 @@ const ProcessingQuestions = ({ onNavigate }) => {
     };
 
     const handleView = (id) => {
-        onNavigate('question-detail', { id });
+        navigate(`/cvht/question-detail/${id}`);
     };
 
     const getStatusLabel = (status) => {

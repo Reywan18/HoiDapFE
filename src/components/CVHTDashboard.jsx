@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './CVHTDashboard.css';
 import api from '../services/api';
 
-const CVHTDashboard = ({ onNavigate }) => {
+const CVHTDashboard = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [pendingQuestions, setPendingQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -59,8 +61,8 @@ const CVHTDashboard = ({ onNavigate }) => {
                     <div className="action-card">
                         <div className="empty-state-visual"></div>
                         <div className="action-buttons">
-                            <button className="btn-action blue" onClick={() => onNavigate('pending-questions')}>Duyệt câu hỏi mới</button>
-                            <button className="btn-action blue">Quản lý FAQ</button>
+                            <button className="btn-action blue" onClick={() => navigate('/cvht/pending')}>Duyệt câu hỏi mới</button>
+                            <button className="btn-action blue" onClick={() => navigate('/cvht/knowledge')}>Quản lý FAQ</button>
                         </div>
                     </div>
 
@@ -111,7 +113,7 @@ const CVHTDashboard = ({ onNavigate }) => {
                                             <td>
                                                 <button
                                                     className="btn-table-action"
-                                                    onClick={() => onNavigate('question-detail', { id: q.maCauHoi })}
+                                                    onClick={() => navigate(`/cvht/question-detail/${q.maCauHoi}`)}
                                                 >
                                                     Xem
                                                 </button>

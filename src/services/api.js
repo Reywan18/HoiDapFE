@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8081/api';
-const ADMIN_API_URL = 'http://localhost:8081/api';
+const API_URL = 'http://localhost:8080/api';
+const ADMIN_API_URL = 'http://localhost:8080/api';
 
 // Main API instance for Students and Advisors (Port 8080)
 const api = axios.create({
@@ -52,7 +52,7 @@ export const authApi = {
 
 // User APIs (Using 8080)
 export const userApi = {
-    getProfile: () => api.get('/users/profile'),
+    getProfile: () => api.get('/auth/profile'),
 };
 
 // Question APIs (Using 8080)
@@ -68,6 +68,16 @@ export const questionApi = {
     getHistory: (id) => api.get(`/questions/${id}/answers`),
     getLatestAnswer: (id) => api.get(`/questions/${id}/latest-answer`),
     downloadFile: (id) => api.get(`/questions/${id}/file`, { responseType: 'blob' }),
+};
+
+// Chat / Conversation APIs (Using 8081)
+export const conversationApi = {
+    createConversation: (data) => api.post('/conversations', data),
+    getStudentConversations: (maSv, params) => api.get(`/conversations/student/${maSv}`, { params }),
+    getCvhtConversations: (maCv, params) => api.get(`/conversations/cvht/${maCv}`, { params }),
+    getMessages: (conversationId) => api.get(`/conversations/${conversationId}/messages`),
+    getConversationDetail: (id) => api.get(`/conversations/${id}`),
+    resolveConversation: (id) => api.put(`/conversations/${id}/resolve`),
 };
 
 // Admin APIs (Using 8081)

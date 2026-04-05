@@ -1,118 +1,82 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, ChevronLeft, ChevronRight, User, Clock, BookOpen, Layers, Users, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './QuestionList.css';
 import './CVHTQuestions.css';
-import api, { questionApi, classApi } from '../services/api';
+import { userApi, conversationApi } from '../services/api';
 
-const PendingQuestions = ({ onNavigate }) => {
+const PendingQuestions = () => {
+    const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    // Filters
-    const [statusFilter, setStatusFilter] = useState('PENDING');
-    const [classFilter, setClassFilter] = useState('');
-    const [cohortFilter, setCohortFilter] = useState('');
-    const [majorFilter, setMajorFilter] = useState('');
-    const [yearFilter, setYearFilter] = useState('2025');
-    const [keyword, setKeyword] = useState('');
-
-    // Data for dropdowns
-    const [classes, setClasses] = useState([]);
-    const [cohorts, setCohorts] = useState([]);
-    const [majors, setMajors] = useState([]);
-
-    useEffect(() => {
-        const fetchFilters = async () => {
-            try {
-                const [classRes, cohortRes, majorRes] = await Promise.all([
-                    classApi.getAll(),
-                    classApi.getCohorts(),
-                    classApi.getMajors()
-                ]);
-
-                if (classRes.data && classRes.data.data) setClasses(classRes.data.data);
-                if (cohortRes.data && cohortRes.data.data) setCohorts(cohortRes.data.data);
-                if (majorRes.data && majorRes.data.data) setMajors(majorRes.data.data);
-            } catch (error) {
-                console.error("Failed to fetch filter options", error);
-            }
-        };
-        fetchFilters();
-    }, []);
-
     useEffect(() => {
         const fetchQuestions = async () => {
             setLoading(true);
             try {
-                const params = {
+                // Get CVHT info
+                const pRes = await userApi.getProfile();
+                console.log("Raw pRes:", pRes);
+                
+                // Trường hợp api trả về ApiResponse bọc trong axios data
+                // hoặc api interceptor đã unwrap dữ liệu
+                const profile = pRes.data?.data || pRes.data;
+                const maCv = profile?.maDinhDanh || profile?.maCv;
+
+                if (!maCv) {
+                    console.error("Không tìm thấy định danh CVHT. Response content:", pRes.data);
+                    setLoading(false);
+                    return;
+                }
+
+                // Gọi tới Conversation Controller
+                const response = await conversationApi.getCvhtConversations(maCv, {
                     page: page,
-                    size: 10,
-                    sort: 'ngayGui,desc',
-                    maLop: classFilter,
-                    khoaHoc: cohortFilter,
-                    chuyenNganh: majorFilter,
-                    keyword: keyword
-                };
+                    size: 10
+                });
 
-                if (yearFilter) {
-                    params.fromDate = `${yearFilter}-01-01`;
-                    params.toDate = `${yearFilter}-12-31`;
-                }
-
-                if (statusFilter !== 'ALL') {
-                    params.status = statusFilter;
-                }
-
-                const response = await questionApi.getAll(params);
                 if (response.data && response.data.data) {
                     const pageData = response.data.data;
                     setQuestions(pageData.content || []);
                     setTotalPages(pageData.totalPages);
                 }
             } catch (error) {
-                console.error("Failed to fetch questions", error);
+                console.error("Failed to fetch conversations", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        // Debounce fetch
-        const timeoutId = setTimeout(() => {
-            fetchQuestions();
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [page, statusFilter, classFilter, cohortFilter, majorFilter, yearFilter, keyword]);
+        fetchQuestions();
+    }, [page]);
 
     const formatDate = (dateString) => {
         if (!dateString) return '';
-        return new Date(dateString).toLocaleDateString('vi-VN');
+        return new Date(dateString).toLocaleDateString('vi-VN') + ' ' + new Date(dateString).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     };
 
-    const handleView = (id) => {
-        onNavigate('question-detail', { id });
+    const handleView = (id, title) => {
+        navigate(`/cvht/question-detail/${id}`, { state: { title } });
     };
 
     const getStatusLabel = (status) => {
         switch (String(status).toUpperCase()) {
-            case 'PENDING': return 'Chờ duyệt';
-            case 'PROCESSING': return 'Đang xử lý';
-            case 'ANSWER':
-            case 'ANSWERED':
-            case '1': return 'Đã trả lời';
+            case 'WAITING_FOR_CVHT': return 'Chờ tiếp nhận';
+            case 'CHATTING_WITH_CVHT': return 'Đang hỗ trợ trực tiếp';
+            case 'CHATTING_WITH_BOT': return 'SV đang chat Bot';
+            case 'RESOLVED': return 'Đã đóng';
             default: return status;
         }
     };
 
     const getStatusColor = (status) => {
         switch (String(status).toUpperCase()) {
-            case 'PENDING': return '#f59e0b';
-            case 'PROCESSING': return '#3b82f6';
-            case 'ANSWER':
-            case 'ANSWERED':
-            case '1': return '#10b981';
+            case 'WAITING_FOR_CVHT': return '#f59e0b';
+            case 'CHATTING_WITH_CVHT': return '#3b82f6';
+            case 'CHATTING_WITH_BOT': return '#6366f1';
+            case 'RESOLVED': return '#10b981';
             default: return '#64748b';
         }
     };
@@ -123,7 +87,7 @@ const PendingQuestions = ({ onNavigate }) => {
                 <div className="top-bar-left"></div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Danh sách câu hỏi</span>
+                        <span className="indicator-text">Phòng Chat Hỗ Trợ</span>
                     </div>
                 </div>
             </header>
@@ -131,92 +95,20 @@ const PendingQuestions = ({ onNavigate }) => {
             <div className="content-container">
                 <h1 className="page-title" style={{ marginBottom: '1.5rem' }}>Danh sách câu hỏi</h1>
 
-                {/* Filter Bar */}
-                <div className="filter-bar">
-                    <div className="filter-group">
-                        <label className="filter-label">Chuyên Ngành</label>
-                        <select
-                            className="filter-input"
-                            value={majorFilter}
-                            onChange={(e) => { setMajorFilter(e.target.value); setPage(0); }}
-                        >
-                            <option value="">Tất cả ngành</option>
-                            {Array.isArray(majors) && majors.map((m, index) => (
-                                <option key={index} value={m}>{m}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="filter-group">
-                        <label className="filter-label">Khóa</label>
-                        <select
-                            className="filter-input"
-                            value={cohortFilter}
-                            onChange={(e) => { setCohortFilter(e.target.value); setPage(0); }}
-                        >
-                            <option value="">Tất cả khóa</option>
-                            {Array.isArray(cohorts) && cohorts.map((c, index) => (
-                                <option key={index} value={c}>{c}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="filter-group">
-                        <label className="filter-label">Lớp</label>
-                        <select
-                            className="filter-input"
-                            value={classFilter}
-                            onChange={(e) => { setClassFilter(e.target.value); setPage(0); }}
-                        >
-                            <option value="">Tất cả lớp</option>
-                            {Array.isArray(classes) && classes.map((c, index) => (
-                                <option key={index} value={c}>{c}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="filter-group">
-                        <label className="filter-label">Năm</label>
-                        <select
-                            className="filter-input"
-                            value={yearFilter}
-                            onChange={(e) => { setYearFilter(e.target.value); setPage(0); }}
-                        >
-                            <option value="">Tất cả</option>
-                            <option value="2024">2024</option>
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                        </select>
-                    </div>
-
-                    <div className="filter-group search-group" style={{ flex: 1, minWidth: '250px' }}>
-                        <label className="filter-label" style={{ visibility: 'hidden' }}>Tìm kiếm</label>
-                        <div className="search-input-wrapper" style={{ width: '100%' }}>
-                            <Search className="search-icon" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Nhập từ khóa tìm kiếm..."
-                                className="search-input"
-                                value={keyword}
-                                onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {loading ? <p style={{ padding: '20px', textAlign: 'center' }}>Đang tải...</p> : (
+                {loading ? <p style={{ padding: '20px', textAlign: 'center' }}>Đang tải phòng chat...</p> : (
                     <>
                         <div className="questions-list">
                             {questions.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                                    Không có câu hỏi nào phù hợp với bộ lọc.
+                                    Không có phòng hỏi đáp nào.
                                 </div>
                             ) : (
                                 questions.map((q) => (
                                     <div
-                                        key={q.maCauHoi}
+                                        key={q.id}
                                         className="question-card-horizontal"
-                                        onClick={() => handleView(q.maCauHoi)}
+                                        onClick={() => handleView(q.id, q.tieuDe)}
+                                        style={{ cursor: 'pointer' }}
                                     >
                                         <div className="card-header-flex">
                                             <h3 className="card-title-lg">{q.tieuDe}</h3>
@@ -234,25 +126,13 @@ const PendingQuestions = ({ onNavigate }) => {
                                         </div>
 
                                         <div className="card-details-grid">
-                                            <div className="detail-row">
+                                            <div className="detail-row highlight">
                                                 <User size={14} />
-                                                <span>{q.tenSinhVien || q.maSinhVien}</span>
+                                                <span>Sinh viên: {q.tenSv || q.maSv}</span>
                                             </div>
                                             <div className="detail-row">
                                                 <Clock size={14} />
-                                                <span>{formatDate(q.ngayGui)}</span>
-                                            </div>
-                                            <div className="detail-row highlight">
-                                                <Users size={14} />
-                                                <span>{q.maLop || 'Chưa có lớp'}</span>
-                                            </div>
-                                            <div className="detail-row">
-                                                <Layers size={14} />
-                                                <span>{q.khoaHoc || 'Chưa có khóa'}</span>
-                                            </div>
-                                            <div className="detail-row">
-                                                <BookOpen size={14} />
-                                                <span>{q.chuyenNganh || 'Chưa có ngành'}</span>
+                                                <span>Tạo lúc: {formatDate(q.ngayTao)}</span>
                                             </div>
                                         </div>
                                     </div>

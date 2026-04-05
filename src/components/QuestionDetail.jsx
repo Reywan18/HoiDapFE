@@ -1,495 +1,332 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, MessageSquare, Edit, Paperclip, X, Save, Send, History } from 'lucide-react';
-import api, { questionApi } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Send, Paperclip, User, Mail, Phone, MapPin, Copy, Check, BookOpen, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { conversationApi } from '../services/api';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 import './QuestionDetail.css';
 
-const QuestionDetail = ({ questionId, onBack }) => {
-    const [question, setQuestion] = useState(null);
-    const [latestAnswer, setLatestAnswer] = useState(null);
-    const [answerHistory, setAnswerHistory] = useState([]);
-    const [showHistory, setShowHistory] = useState(false);
+const QuestionDetail = () => {
+    const { id: questionId } = useParams();
+    const navigate = useNavigate();
+    
+    const [messages, setMessages] = useState([]);
+    const [inputMessage, setInputMessage] = useState('');
     const [loading, setLoading] = useState(true);
+    const [conversation, setConversation] = useState(null);
+    const [copyStatus, setCopyStatus] = useState({ email: false, phone: false });
 
-    // Reply State (CVHT)
-    const [replyContent, setReplyContent] = useState('');
-    const [replyFile, setReplyFile] = useState(null);
-    const [sending, setSending] = useState(false);
+    const messagesEndRef = useRef(null);
+    const clientRef = useRef(null);
 
-    // Edit Question State (Student)
-    const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({ tieuDe: '', noiDung: '' });
-    const [editFile, setEditFile] = useState(null);
-    const [saving, setSaving] = useState(false);
-
-    // Edit Answer State (CVHT)
-    const [isEditingAnswer, setIsEditingAnswer] = useState(false);
-    const [editAnswerContent, setEditAnswerContent] = useState('');
-    const [editAnswerFile, setEditAnswerFile] = useState(null);
-    const [sendingAnswer, setSendingAnswer] = useState(false);
-
-    // Determine Role
-    const role = localStorage.getItem('role');
-    const isCvht = role === 'cvht';
-    const API_BASE = 'http://localhost:8081'; // Updated to 8081
+    const role = localStorage.getItem('role') || 'student';
+    const mySenderType = role === 'cvht' ? 'CVHT' : 'SINH_VIEN';
 
     useEffect(() => {
         if (questionId) {
-            fetchData();
+            fetchConversationDetail();
+            fetchMessages();
+            connectWebSocket();
         }
+
+        return () => {
+            if (clientRef.current) {
+                clientRef.current.deactivate();
+            }
+        };
     }, [questionId]);
 
-    const fetchData = async () => {
+    const fetchConversationDetail = async () => {
+        try {
+            const res = await conversationApi.getConversationDetail(questionId);
+            if (res.data && res.data.status === 200) {
+                setConversation(res.data.data);
+            }
+        } catch (error) {
+            console.error('Lỗi tải thông tin cuộc hội thoại:', error);
+        }
+    };
+
+    const fetchMessages = async () => {
         setLoading(true);
         try {
-            const [qRes, aRes, hRes] = await Promise.all([
-                questionApi.getById(questionId),
-                questionApi.getLatestAnswer(questionId).catch(() => ({ data: { data: null } })),
-                questionApi.getHistory(questionId).catch(() => ({ data: { data: [] } }))
-            ]);
-
-            setQuestion(qRes.data);
-            setLatestAnswer(aRes.data?.data || null);
-            setAnswerHistory(hRes.data?.data || []);
+            const res = await conversationApi.getMessages(questionId);
+            if (res.data && res.data.status === 200) {
+                setMessages(res.data.data);
+            }
         } catch (error) {
-            console.error('Error fetching details:', error);
+            console.error('Lỗi tải lịch sử tin nhắn:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setReplyFile(e.target.files[0]);
-        }
-    };
-
-    // --- Edit Question Logic ---
-    const handleEditClick = () => {
-        setEditData({
-            tieuDe: question.tieuDe,
-            noiDung: question.noiDung
+    const connectWebSocket = () => {
+        const client = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+            reconnectDelay: 2000,
+            onConnect: () => {
+                console.log('Đã kết nối WebSockets');
+                client.subscribe(`/topic/conversation/${questionId}`, (message) => {
+                    const newMsg = JSON.parse(message.body);
+                    setMessages((prev) => [...prev, newMsg]);
+                });
+            },
+            onStompError: (frame) => {
+                console.error('Lỗi WebSocketBroker: ', frame);
+            },
         });
-        setEditFile(null);
-        setIsEditing(true);
+        client.activate();
+        clientRef.current = client;
     };
 
-    const handleEditFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setEditFile(e.target.files[0]);
-        }
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const handleSaveEdit = async () => {
-        if (!editData.tieuDe.trim() || !editData.noiDung.trim()) {
-            alert("Tiêu đề và nội dung không được để trống");
-            return;
-        }
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
-        setSaving(true);
-        try {
-            const formData = new FormData();
-            formData.append('tieuDe', editData.tieuDe);
-            formData.append('noiDung', editData.noiDung);
-            formData.append('linhVuc', question.linhVuc || 'HOCTAP');
-            if (editFile) {
-                formData.append('file', editFile);
-            }
+    const handleSend = () => {
+        if (!inputMessage.trim()) return;
 
-            // Still using base direct PUT as it wasn't explicitly added to questionApi in the same way 
-            // but let's assume we can use a generic update method or add it.
-            // For now, let's just keep the endpoint but use api instance consistency.
-            await api.put(`/questions/${questionId}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+        if (clientRef.current && clientRef.current.connected) {
+            const payload = {
+                conversationId: questionId,
+                senderId: "Unknown",
+                senderType: mySenderType,
+                content: inputMessage
+            };
+
+            clientRef.current.publish({
+                destination: '/app/chat.sendMessage',
+                body: JSON.stringify(payload)
             });
 
-            alert('Cập nhật câu hỏi thành công!');
-            setIsEditing(false);
-            fetchData();
-        } catch (error) {
-            console.error('Error updating question:', error);
-            alert('Cập nhật thất bại. Vui lòng thử lại.');
-        } finally {
-            setSaving(false);
+            setInputMessage('');
+        } else {
+            console.log('Chưa kết nối server.');
         }
     };
 
-    const handleCancelEdit = () => {
-        setIsEditing(false);
-        setEditData({ tieuDe: '', noiDung: '' });
-        setEditFile(null);
+    const handleCopy = (text, type) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        setCopyStatus(prev => ({ ...prev, [type]: true }));
+        setTimeout(() => setCopyStatus(prev => ({ ...prev, [type]: false })), 2000);
     };
 
-    // --- Edit Answer Logic (CVHT) ---
-    const handleEditAnswerClick = () => {
-        if (latestAnswer) {
-            setEditAnswerContent(latestAnswer.noiDung);
-            setEditAnswerFile(null);
-            setIsEditingAnswer(true);
-        }
-    };
-
-    const handleEditAnswerFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setEditAnswerFile(e.target.files[0]);
-        }
-    };
-
-    const handleCancelEditAnswer = () => {
-        setIsEditingAnswer(false);
-        setEditAnswerContent('');
-        setEditAnswerFile(null);
-    };
-
-    const handleSaveAnswerEdit = async () => {
-        if (!editAnswerContent.trim()) {
-            alert("Nội dung trả lời không được để trống");
-            return;
-        }
-        setSendingAnswer(true);
+    const handleResolve = async () => {
+        if (!window.confirm("Bạn có chắc chắn muốn đánh dấu câu hỏi này là hoàn thành? Sau khi hoàn thành, cuộc trò chuyện sẽ được đóng lại.")) return;
+        
         try {
-            const formData = new FormData();
-            formData.append('noiDung', editAnswerContent);
-            if (editAnswerFile) {
-                formData.append('file', editAnswerFile);
+            const res = await conversationApi.resolveConversation(questionId);
+            if (res.data && res.data.status === 200) {
+                alert("Đã hoàn thành câu hỏi!");
+                fetchConversationDetail(); // Refresh data to update status
             }
-
-            await questionApi.answer(questionId, formData);
-
-            alert('Cập nhật câu trả lời thành công!');
-            setIsEditingAnswer(false);
-            fetchData();
         } catch (error) {
-            console.error('Error updating answer:', error);
-            alert('Cập nhật thất bại.');
-        } finally {
-            setSendingAnswer(false);
+            console.error('Lỗi khi hoàn thành câu hỏi:', error);
+            alert("Có lỗi xảy ra khi hoàn thành câu hỏi.");
         }
     };
 
-    // --- Reply Logic ---
-    const handleSendReply = async () => {
-        if (!replyContent.trim()) return;
-        setSending(true);
-        try {
-            const formData = new FormData();
-            formData.append('noiDung', replyContent);
-            if (replyFile) {
-                formData.append('file', replyFile);
-            }
-
-            await questionApi.answer(questionId, formData);
-
-            alert('Phản hồi thành công!');
-            setReplyContent('');
-            setReplyFile(null);
-            fetchData();
-
-        } catch (error) {
-            console.error('Error sending reply:', error);
-            alert('Gửi phản hồi thất bại.');
-        } finally {
-            setSending(false);
-        }
+    const handleReport = () => {
+        alert("Tính năng báo cáo đang được phát triển. Cảm ơn bạn đã phản hồi!");
     };
 
-
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const formatTime = (isoString) => {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     };
 
-    const getStatusClass = (status) => {
-        switch (String(status).toUpperCase()) {
-            case 'PENDING': return 'pending';
-            case 'PROCESSING': return 'processing';
-            case 'ANSWER':
-            case 'ANSWERED':
-            case 'COMPLETED':
-            case '1': return 'completed';
-            case 'REJECTED': return 'rejected';
-            default: return '';
-        }
-    };
+    if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải lịch sử trò chuyện...</div>;
 
-    const getStatusLabel = (status) => {
-        switch (String(status).toUpperCase()) {
-            case 'PENDING': return 'Đang chờ';
-            case 'PROCESSING': return 'Đang xử lý';
-            case 'ANSWER':
-            case 'ANSWERED':
-            case '1': return 'Đã trả lời';
-            case 'COMPLETED': return 'Hoàn thành';
-            case 'REJECTED': return 'Từ chối';
-            default: return status;
-        }
-    };
+    const isResolved = conversation?.trangThai === 'RESOLVED';
 
-    if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải chi tiết...</div>;
-    if (!question) return <div style={{ padding: '2rem', textAlign: 'center' }}>Không tìm thấy câu hỏi.</div>;
+    // Determine whose info to show
+    const isUserStudent = role === 'student';
+    const displayInfo = isUserStudent ? {
+        name: conversation?.tenCv || "Đang chờ CVHT...",
+        id: conversation?.maCv || "---",
+        idLabel: "Mã giảng viên",
+        email: conversation?.emailCv || "---",
+        phone: conversation?.sdtCv || "---",
+        detail: conversation?.chuyenMonCv || "Chưa cập nhật",
+        detailLabel: "Ngành",
+        avatar: conversation?.tenCv,
+        roleLabel: "Giảng viên / CVHT"
+    } : {
+        name: conversation?.tenSv || "Sinh viên",
+        id: conversation?.maSv || "---",
+        idLabel: "Mã sinh viên",
+        email: conversation?.emailSv || "---",
+        phone: conversation?.sdtSv || "---",
+        detail: conversation?.maLopSv || "---",
+        detailLabel: "Lớp",
+        detailExtra: conversation?.khoaSv,
+        avatar: conversation?.tenSv,
+        roleLabel: "Sinh viên"
+    };
 
     return (
-        <main className="main-content">
+        <main className="main-content chat-main-layout">
             <header className="top-bar">
+                <div className="top-bar-left">
+                    <button className="back-btn-minimal" onClick={() => navigate(-1)}>
+                        <ArrowLeft size={20} />
+                    </button>
+                </div>
                 <div className="top-bar-center">
-                    <span className="indicator-text">Chi tiết câu hỏi #{question.maCauHoi}</span>
+                    <span className="indicator-text">{conversation?.tieuDe || "Đang tải..."}</span>
                 </div>
                 <div className="top-bar-right">
-                    <button className="back-btn" onClick={onBack} style={{ marginRight: '2rem' }}>
-                        <ArrowLeft size={20} />
-                        <span>Quay lại</span>
-                    </button>
+                    <span className={`status-badge ${isResolved ? 'status-resolved' : 'status-online'}`}>
+                        {isResolved ? "Đã giải quyết" : "Đang hoạt động"}
+                    </span>
                 </div>
             </header>
 
-            <div className="content-container">
-                <div className="detail-header-card">
-                    <div className="detail-header-top">
-                        <span className="detail-id">#{question.maCauHoi}</span>
-                        {isEditing ? (
-                            <input
-                                type="text"
-                                className="form-input"
-                                style={{ fontSize: '1.25rem', fontWeight: 'bold', flex: 1, margin: '0 1rem' }}
-                                value={editData.tieuDe}
-                                onChange={e => setEditData({ ...editData, tieuDe: e.target.value })}
+            <div className="chat-view-wrapper">
+                <div className="chat-container">
+                    <div className="messages-area">
+                        {messages.length === 0 ? (
+                            <div className="no-messages">Hãy là người gửi tin nhắn đầu tiên!</div>
+                        ) : null}
+
+                        {messages.map((msg, index) => {
+                            const isMe = msg.nguoiGuiType === mySenderType;
+                            return (
+                                <div key={index} className={`message-bubble ${isMe ? 'message-mine' : 'message-yours'}`}>
+                                    <div className="message-content">
+                                        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.noiDung}</p>
+                                        <div className="message-time">{formatTime(msg.thoiGianGui)}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    <div className={`chat-input-area ${isResolved ? 'disabled-chat' : ''}`}>
+                        <button className="btn-icon" title="Đính kèm tệp" disabled={isResolved}>
+                            <Paperclip size={20} />
+                        </button>
+                        <input
+                            type="text"
+                            className="chat-input"
+                            placeholder={isResolved ? "Cuộc trò chuyện này đã kết thúc." : "Nhập tin nhắn..."}
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            disabled={isResolved}
+                        />
+                        <button className="btn-send-chat" onClick={handleSend} disabled={!inputMessage.trim() || isResolved}>
+                            <Send size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                <aside className="participant-info-sidebar">
+                    <div className="info-header">
+                        <div className="big-avatar-circle">
+                            <img
+                                src={`https://ui-avatars.com/api/?name=${(displayInfo.avatar || "U").replace(/ /g, '+')}&background=random&size=128&color=fff`}
+                                alt="Avatar"
                             />
-                        ) : (
-                            <h1 className="detail-subject">{question.tieuDe}</h1>
-                        )}
-                        <span className={`status-badge ${getStatusClass(question.trangThai)}`}>
-                            {getStatusLabel(question.trangThai)}
-                        </span>
-                    </div>
-                    <div className="detail-meta">
-                        <div className="meta-item">
-                            <Clock size={16} />
-                            <span>Gửi lúc: {formatDate(question.ngayGui)}</span>
                         </div>
-                        <div className="meta-item">
-                            <MessageSquare size={16} />
-                            <span>Sinh viên: <strong>{question.tenSinhVien || question.maSinhVien}</strong></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="conversation-thread">
-                    {/* User Question */}
-                    <div className="message-node user-node">
-                        <div className="node-avatar">
-                            <div className="avatar-circle">SV</div>
-                        </div>
-                        <div className="node-content-wrapper">
-                            <div className="node-header">
-                                <span className="node-name">{question.tenSinhVien || 'Sinh viên'}</span>
-                                <span className="node-time">{formatDate(question.ngayGui)}</span>
-                                {!isCvht && !isEditing && (
-                                    <button
-                                        className="edit-btn"
-                                        onClick={handleEditClick}
-                                        title="Chỉnh sửa câu hỏi"
-                                        style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-                                    >
-                                        <Edit size={16} />
-                                    </button>
-                                )}
-                            </div>
-                            <div className="node-body">
-                                {isEditing ? (
-                                    <div className="edit-form">
-                                        <textarea
-                                            className="form-textarea"
-                                            rows={5}
-                                            value={editData.noiDung}
-                                            onChange={e => setEditData({ ...editData, noiDung: e.target.value })}
-                                            style={{ width: '100%', marginBottom: '10px' }}
-                                        ></textarea>
-
-                                        <div className="file-input-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                                            <input type="file" id="edit-file" hidden onChange={handleEditFileChange} />
-                                            <label htmlFor="edit-file" className="btn-attach" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: '#3b82f6' }}>
-                                                <Paperclip size={16} />
-                                                <span>{editFile ? editFile.name : 'Thay đổi đính kèm'}</span>
-                                            </label>
-                                        </div>
-
-                                        <div className="edit-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                            <button className="btn-secondary" onClick={handleCancelEdit} disabled={saving}>
-                                                <X size={16} /> Hủy
-                                            </button>
-                                            <button className="btn-primary" onClick={handleSaveEdit} disabled={saving}>
-                                                <Save size={16} /> {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p style={{ whiteSpace: 'pre-line' }}>{question.noiDung}</p>
-                                        {question.fileName && (
-                                            <div className="attachment-box">
-                                                <Paperclip size={14} />
-                                                <a href={`${API_BASE}/api/questions/${question.maCauHoi}/file`} target="_blank" rel="noopener noreferrer">
-                                                    {question.fileName}
-                                                </a>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>
+                        <h2 className="display-name">{displayInfo.name}</h2>
+                        <span className="role-tag">{displayInfo.roleLabel}</span>
                     </div>
 
-                    {/* Latest Answer (if any) */}
-                    {/* Latest Answer (if any) */}
-                    {latestAnswer && (
-                        <div className="message-node admin-node">
-                            <div className="node-avatar">
-                                <div className="avatar-circle admin">GV</div>
-                            </div>
-                            <div className="node-content-wrapper">
-                                <div className="node-header">
-                                    <span className="node-name">{latestAnswer.nguoiTraLoi || 'CVHT'}</span>
-                                    <span className="role-badge">Cố vấn</span>
-                                    <span className="node-time">{formatDate(latestAnswer.ngayTraLoi)}</span>
-                                    {isCvht && !isEditingAnswer && (
-                                        <button
-                                            className="edit-btn"
-                                            onClick={handleEditAnswerClick}
-                                            title="Sửa câu trả lời"
-                                            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-                                        >
-                                            <Edit size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="node-body">
-                                    {isEditingAnswer ? (
-                                        <div className="edit-form">
-                                            <textarea
-                                                className="form-textarea"
-                                                rows={5}
-                                                value={editAnswerContent}
-                                                onChange={e => setEditAnswerContent(e.target.value)}
-                                                style={{ width: '100%', marginBottom: '10px' }}
-                                            ></textarea>
+                    <div className="info-body">
+                        <div className="info-section">
+                            <p className="section-title">Thông tin</p>
 
-                                            <div className="file-input-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                                                <input type="file" id="edit-answer-file" hidden onChange={handleEditAnswerFileChange} />
-                                                <label htmlFor="edit-answer-file" className="btn-attach" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: '#3b82f6' }}>
-                                                    <Paperclip size={16} />
-                                                    <span>{editAnswerFile ? editAnswerFile.name : 'Thay đổi đính kèm'}</span>
-                                                </label>
-                                            </div>
-
-                                            <div className="edit-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                                <button className="btn-secondary" onClick={handleCancelEditAnswer} disabled={sendingAnswer}>
-                                                    <X size={16} /> Hủy
-                                                </button>
-                                                <button className="btn-primary" onClick={handleSaveAnswerEdit} disabled={sendingAnswer}>
-                                                    <Save size={16} /> {sendingAnswer ? 'Đang lưu...' : 'Cập nhật'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p style={{ whiteSpace: 'pre-line' }}>{latestAnswer.noiDung}</p>
-                                            {latestAnswer.fileName && (
-                                                <div className="attachment-box">
-                                                    <Paperclip size={14} />
-                                                    <a href={latestAnswer.fileDownloadUrl || `${API_BASE}/api/questions/versions/${latestAnswer.versionId}/file`} target="_blank" rel="noopener noreferrer">
-                                                        {latestAnswer.fileName}
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
+                            <div className="info-item">
+                                <div className="item-icon"><User size={18} /></div>
+                                <div className="item-text">
+                                    <label>{displayInfo.idLabel}</label>
+                                    <p>{displayInfo.id}</p>
                                 </div>
                             </div>
-                        </div>
-                    )}
 
-                    {/* History Button (If history exists and > 1 version) */}
-                    {answerHistory.length > 1 && (
-                        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                            <button
-                                onClick={() => setShowHistory(!showHistory)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#64748b',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    fontSize: '0.9rem'
-                                }}
-                            >
-                                <History size={16} />
-                                {showHistory ? 'Ẩn lịch sử chỉnh sửa' : 'Xem lịch sử chỉnh sửa'}
-                            </button>
-                        </div>
-                    )}
-
-                    {/* History List */}
-                    {showHistory && (
-                        <div className="history-list" style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                            <h4 style={{ marginBottom: '1rem', color: '#475569' }}>Lịch sử chỉnh sửa:</h4>
-                            {answerHistory.map((item) => (
-                                <div key={item.version} className="history-item" style={{
-                                    padding: '1rem',
-                                    backgroundColor: '#f8fafc',
-                                    borderRadius: '8px',
-                                    marginBottom: '0.5rem',
-                                    border: '1px solid #e2e8f0'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: '600', color: '#334155' }}>Phiên bản {item.version}</span>
-                                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{formatDate(item.thoiGianTao)}</span>
-                                    </div>
-                                    <p style={{ whiteSpace: 'pre-line', fontSize: '0.95rem', color: '#1e293b' }}>{item.noiDung}</p>
-                                    {item.fileName && (
-                                        <div className="attachment-box" style={{ marginTop: '0.5rem' }}>
-                                            <Paperclip size={14} />
-                                            <a href={item.downloadUrl || `${API_BASE}/api/questions/versions/${item.version}/file`} target="_blank" rel="noopener noreferrer">
-                                                {item.fileName}
-                                            </a>
-                                        </div>
-                                    )}
+                            <div className="info-item">
+                                <div className="item-icon"><Mail size={18} /></div>
+                                <div className="item-text">
+                                    <label>Email</label>
+                                    <p>{displayInfo.email}</p>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-
-
-                {/* Reply Box Area - Only for CVHT */}
-                {/* Reply Box Area - Only for CVHT and if not answered */}
-                {isCvht && !['ANSWER', 'ANSWERED', 'COMPLETED', '1', 'REJECTED'].includes(String(question.trangThai).toUpperCase()) && (
-                    <div className="reply-area">
-                        <div className="reply-box">
-                            <textarea
-                                placeholder="Nhập phản hồi của bạn..."
-                                rows={3}
-                                value={replyContent}
-                                onChange={(e) => setReplyContent(e.target.value)}
-                            ></textarea>
-                            <div className="reply-actions">
-                                <div className="file-input-wrapper">
-                                    <input type="file" id="reply-file" hidden onChange={handleFileChange} />
-                                    <label htmlFor="reply-file" className="btn-attach" title="Đính kèm">
-                                        <Paperclip size={18} />
-                                        {replyFile && <span style={{ fontSize: '10px', marginLeft: '4px' }}>{replyFile.name}</span>}
-                                    </label>
-                                </div>
-                                <button className="btn-primary btn-send" onClick={handleSendReply} disabled={sending}>
-                                    <Send size={16} /> {sending ? 'Đang gửi...' : 'Gửi phản hồi'}
+                                <button
+                                    className="copy-btn-mini"
+                                    onClick={() => handleCopy(displayInfo.email, 'email')}
+                                    title="Copy Email"
+                                >
+                                    {copyStatus.email ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
                                 </button>
                             </div>
+
+                            <div className="info-item">
+                                <div className="item-icon"><Phone size={18} /></div>
+                                <div className="item-text">
+                                    <label>Số điện thoại</label>
+                                    <p>{displayInfo.phone}</p>
+                                </div>
+                                <button
+                                    className="copy-btn-mini"
+                                    onClick={() => handleCopy(displayInfo.phone, 'phone')}
+                                    title="Copy SĐT"
+                                >
+                                    {copyStatus.phone ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                                </button>
+                            </div>
+
+                            <div className="info-item">
+                                <div className="item-icon"><BookOpen size={18} /></div>
+                                <div className="item-text">
+                                    <label>{displayInfo.detailLabel}</label>
+                                    <p>{displayInfo.detail}</p>
+                                </div>
+                            </div>
+
+                            {displayInfo.detailExtra && (
+                                <div className="info-item">
+                                    <div className="item-icon"><MapPin size={18} /></div>
+                                    <div className="item-text">
+                                        <label>Khoa</label>
+                                        <p>{displayInfo.detailExtra}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
+
+                    <div className="info-footer">
+                        <div className="action-buttons">
+                            <button className="btn-action-outline btn-report" onClick={handleReport}>
+                                <AlertTriangle size={16} />
+                                <span>Báo cáo</span>
+                            </button>
+                            
+                            {role === 'cvht' && !isResolved && (
+                                <button className="btn-action-solid btn-complete" onClick={handleResolve}>
+                                    <CheckCircle size={16} />
+                                    <span>Hoàn thành</span>
+                                </button>
+                            )}
+
+                            {isResolved && (
+                                <div className="resolved-badge">
+                                    <CheckCircle size={14} />
+                                    <span>Đã hoàn thành</span>
+                                </div>
+                            )}
+                        </div>
+                        <p className="footer-note">Trao đổi văn minh & lịch sự</p>
+                    </div>
+                </aside>
             </div>
         </main>
     );

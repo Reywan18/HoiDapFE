@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, FileText, CheckCircle, BookOpen, BarChart2, LogOut, LayoutDashboard } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './CVHTSidebar.css';
 
-const CVHTSidebar = ({ activePage, onNavigate }) => {
+const CVHTSidebar = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const current = location.pathname;
     const [userData, setUserData] = useState({
         name: "CVHT",
         role: "Giảng viên"
@@ -35,7 +39,7 @@ const CVHTSidebar = ({ activePage, onNavigate }) => {
         if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
-            window.location.href = '/'; // Reload to login
+            navigate('/login');
         }
     };
 
@@ -64,15 +68,14 @@ const CVHTSidebar = ({ activePage, onNavigate }) => {
 
             <nav className="cvht-nav">
                 {navItems.map(item => (
-                    <a
+                    <Link
                         key={item.id}
-                        href="#"
-                        className={`cvht-nav-item ${activePage === item.id ? 'active' : ''}`}
-                        onClick={(e) => { e.preventDefault(); onNavigate(item.id); }}
+                        to={`/cvht/${item.id}`}
+                        className={`cvht-nav-item ${current.includes(item.id) ? 'active' : ''}`}
                     >
                         <item.icon size={20} />
                         <span>{item.label}</span>
-                    </a>
+                    </Link>
                 ))}
 
                 <a
