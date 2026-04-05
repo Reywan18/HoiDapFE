@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api';
-const ADMIN_API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const ADMIN_API_URL = API_URL;
 
 // Main API instance for Students and Advisors (Port 8080)
 const api = axios.create({

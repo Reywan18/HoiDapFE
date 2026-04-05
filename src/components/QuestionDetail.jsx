@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Paperclip, User, Mail, Phone, MapPin, Copy, Check, BookOpen, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { conversationApi } from '../services/api';
+import { conversationApi, userApi } from '../services/api';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import './QuestionDetail.css';
@@ -15,6 +15,7 @@ const QuestionDetail = () => {
     const [loading, setLoading] = useState(true);
     const [conversation, setConversation] = useState(null);
     const [copyStatus, setCopyStatus] = useState({ email: false, phone: false });
+    const [myId, setMyId] = useState(null);
 
     const messagesEndRef = useRef(null);
     const clientRef = useRef(null);
@@ -23,7 +24,18 @@ const QuestionDetail = () => {
     const mySenderType = role === 'cvht' ? 'CVHT' : 'SINH_VIEN';
 
     useEffect(() => {
+        const fetchMyInfo = async () => {
+            try {
+                const res = await userApi.getProfile();
+                const profile = res.data?.data || res.data;
+                setMyId(profile?.maDinhDanh || profile?.maCv || profile?.maSv);
+            } catch (error) {
+                console.error("Lỗi lấy thông tin định danh cá nhân:", error);
+            }
+        };
+
         if (questionId) {
+            fetchMyInfo();
             fetchConversationDetail();
             fetchMessages();
             connectWebSocket();
@@ -94,7 +106,7 @@ const QuestionDetail = () => {
         if (clientRef.current && clientRef.current.connected) {
             const payload = {
                 conversationId: questionId,
-                senderId: "Unknown",
+                senderId: myId || (role === 'cvht' ? conversation?.maCv : conversation?.maSv) || "Unknown",
                 senderType: mySenderType,
                 content: inputMessage
             };
