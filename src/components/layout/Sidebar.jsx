@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2 } from 'lucide-react';
+import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2, Bot } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
@@ -10,8 +10,8 @@ const Sidebar = () => {
     const role = localStorage.getItem('role') || 'student';
 
     const [userData, setUserData] = useState({
-        name: role === 'cvht' ? "Cố vấn học tập" : "Sinh viên",
-        role: role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long"
+        name: role === 'admin' ? "Quản trị viên" : (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên"),
+        role: role === 'admin' ? "Hệ thống" : (role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long")
     });
 
     useEffect(() => {
@@ -27,8 +27,8 @@ const Sidebar = () => {
 
                 const payload = JSON.parse(jsonPayload);
                 setUserData({
-                    name: payload.hoTen || payload.name || (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên"),
-                    role: role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long"
+                    name: payload.hoTen || payload.name || (role === 'admin' ? "Quản trị viên" : (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên")),
+                    role: role === 'admin' ? "Hệ thống" : (role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long")
                 });
             } catch (e) {
                 console.error("Token decode error", e);
@@ -45,18 +45,33 @@ const Sidebar = () => {
         }
     };
 
-    // Định nghĩa Menu theo Role
-    const navItems = role === 'cvht' ? [
-        { id: 'profile', to: '/cvht/profile', icon: User, label: 'Hồ sơ cá nhân' },
-        { id: 'knowledge', to: '/cvht/knowledge', icon: BookOpen, label: 'Kho tri thức (FAQ)' },
-        { id: 'pending', to: '/cvht/pending', icon: FileText, label: 'Danh sách câu hỏi' },
-        { id: 'reports', to: '/cvht/reports', icon: BarChart2, label: 'Báo cáo thống kê' },
-    ] : [
-        { id: 'profile', to: '/sinhvien/profile', icon: User, label: 'Hồ sơ cá nhân' },
-        { id: 'faq', to: '/sinhvien/faq', icon: BookOpen, label: 'Kho kiến thức (FAQ)' },
-        { id: 'new-question', to: '/sinhvien/new-question', icon: PlusCircle, label: 'Tạo câu hỏi mới' },
-        { id: 'my-question', to: '/sinhvien/my-question', icon: MessageSquare, label: 'Câu hỏi của tôi' },
-    ];
+    let navItems = [];
+    if (role === 'admin') {
+        navItems = [
+            { id: 'dashboard', to: '/admin/dashboard', icon: BarChart2, label: 'Báo cáo thống kê' },
+            { id: 'classes', to: '/admin/classes', icon: BookOpen, label: 'Quản lý Lớp' },
+            { id: 'students', to: '/admin/students', icon: User, label: 'Quản lý Sinh viên' },
+            { id: 'cvht', to: '/admin/cvht', icon: User, label: 'Quản lý CVHT' },
+            { id: 'questions', to: '/admin/questions', icon: FileText, label: 'Quản lý Câu hỏi' },
+            { id: 'faqs', to: '/admin/faqs', icon: BookOpen, label: 'Quản lý FAQ' },
+            { id: 'ai-training', to: '/admin/ai-training', icon: Bot, label: 'Huấn luyện AI' },
+        ];
+    } else if (role === 'cvht') {
+        navItems = [
+            { id: 'profile', to: '/cvht/profile', icon: User, label: 'Hồ sơ cá nhân' },
+            { id: 'knowledge', to: '/cvht/knowledge', icon: BookOpen, label: 'Kho tri thức (FAQ)' },
+            { id: 'pending', to: '/cvht/pending', icon: FileText, label: 'Danh sách câu hỏi' },
+            { id: 'reports', to: '/cvht/reports', icon: BarChart2, label: 'Báo cáo thống kê' },
+        ];
+    } else {
+        navItems = [
+            { id: 'profile', to: '/sinhvien/profile', icon: User, label: 'Hồ sơ cá nhân' },
+            { id: 'chatbot', to: '/sinhvien/chatbot', icon: Bot, label: 'Hỏi đáp nhanh' },
+            { id: 'faq', to: '/sinhvien/faq', icon: BookOpen, label: 'Kho kiến thức (FAQ)' },
+            { id: 'new-question', to: '/sinhvien/new-question', icon: PlusCircle, label: 'Tạo câu hỏi mới' },
+            { id: 'my-question', to: '/sinhvien/my-question', icon: MessageSquare, label: 'Câu hỏi của tôi' },
+        ];
+    }
 
     return (
         <aside className="sidebar">

@@ -1,27 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { userApi, conversationApi } from '../services/api';
+import api, { userApi, conversationApi } from '../../services/api';
 import { Send, Paperclip, X } from 'lucide-react';
-import './QuestionList.css'; // Common styles
+import '../common/QuestionList.css';
 import './NewQuestion.css';
 
 const NewQuestion = () => {
     const navigate = useNavigate();
     const [title, setTitle] = useState('');
-    const [department, setDepartment] = useState('HOCTAP'); // Default domain/field
+    const [department, setDepartment] = useState('HOCTAP');
     const [content, setContent] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [cvhtInfo, setCvhtInfo] = useState('');
 
     React.useEffect(() => {
-        // Fetch current user profile to get CVHT info via the new API
         userApi.getProfile()
             .then(res => {
                 if (res.data && res.data.data) {
                     const u = res.data.data;
 
-                    // --- PHẦN SỬA ĐỔI: Map đúng field theo API mới ---
                     if (u.tenCoVan && u.maCoVan) {
                         setCvhtInfo(`${u.maCoVan} - ${u.tenCoVan}`);
                     } else if (u.tenCoVan) {
@@ -29,7 +27,6 @@ const NewQuestion = () => {
                     } else {
                         setCvhtInfo('Chưa có Cố vấn học tập');
                     }
-                    // ------------------------------------------------
                 }
             })
             .catch(err => {
@@ -60,9 +57,8 @@ const NewQuestion = () => {
             const response = await conversationApi.createConversation(requestData);
 
             if (response.data && response.data.status === 200) {
-                // Điều hướng thẳng tới màn hình Chat vừa tạo
-                navigate(`/sinhvien/question-detail/${response.data.data.id}`, { 
-                    state: { title: title } 
+                navigate(`/sinhvien/question-detail/${response.data.data.id}`, {
+                    state: { title: title }
                 });
             }
         } catch (error) {

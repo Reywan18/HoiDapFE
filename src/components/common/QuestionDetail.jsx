@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Paperclip, User, Mail, Phone, MapPin, Copy, Check, BookOpen, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { conversationApi, userApi } from '../services/api';
+import { conversationApi, userApi } from '../../services/api';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import './QuestionDetail.css';
@@ -157,11 +157,13 @@ const QuestionDetail = () => {
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải lịch sử trò chuyện...</div>;
 
     const isResolved = conversation?.trangThai === 'RESOLVED';
+    const isReadOnly = isResolved || role === 'admin';
 
     // Determine whose info to show
     const isUserStudent = role === 'student';
-    const displayInfo = isUserStudent ? {
-        name: conversation?.tenCv || "Đang chờ CVHT...",
+    // Admin & CVHT will see Student info on the sidebar to know who asked
+    const cvhtInfo = {
+        name: conversation?.tenCv || "Chưa phân công",
         id: conversation?.maCv || "---",
         idLabel: "Mã giảng viên",
         email: conversation?.emailCv || "---",
@@ -170,7 +172,9 @@ const QuestionDetail = () => {
         detailLabel: "Ngành",
         avatar: conversation?.tenCv,
         roleLabel: "Giảng viên / CVHT"
-    } : {
+    };
+
+    const studentInfo = {
         name: conversation?.tenSv || "Sinh viên",
         id: conversation?.maSv || "---",
         idLabel: "Mã sinh viên",
@@ -181,6 +185,90 @@ const QuestionDetail = () => {
         detailExtra: conversation?.khoaSv,
         avatar: conversation?.tenSv,
         roleLabel: "Sinh viên"
+    };
+
+    const displayInfo = isUserStudent ? cvhtInfo : studentInfo;
+
+    const renderParticipantInfo = (info, index) => {
+        if (!info) return null;
+        return (
+            <div className="info-body" key={index} style={{ borderBottom: index === 0 ? '1px solid #e5e7eb' : 'none', paddingBottom: index === 0 ? '16px' : '0', marginBottom: index === 0 ? '16px' : '0' }}>
+                <div className="info-section">
+                    <p className="section-title" style={{ color: '#0369a1', fontWeight: '600' }}>
+                        Thông tin {info.roleLabel}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '12px' }}>
+                        <div className="avatar-circle" style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden' }}>
+                            <img
+                                src={`https://ui-avatars.com/api/?name=${(info.avatar || "U").replace(/ /g, '+')}&background=random&color=fff`}
+                                alt="Avatar"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: '600', color: '#1f2937' }}>{info.name}</div>
+                            <div style={{ fontSize: '12px', color: '#6b7280' }}>{info.roleLabel}</div>
+                        </div>
+                    </div>
+
+                    <div className="info-item">
+                        <div className="item-icon"><User size={18} /></div>
+                        <div className="item-text">
+                            <label>{info.idLabel}</label>
+                            <p>{info.id}</p>
+                        </div>
+                    </div>
+
+                    <div className="info-item">
+                        <div className="item-icon"><Mail size={18} /></div>
+                        <div className="item-text">
+                            <label>Email</label>
+                            <p>{info.email}</p>
+                        </div>
+                        <button
+                            className="copy-btn-mini"
+                            onClick={() => handleCopy(info.email, 'email')}
+                            title="Copy Email"
+                        >
+                            {copyStatus.email ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                        </button>
+                    </div>
+
+                    <div className="info-item">
+                        <div className="item-icon"><Phone size={18} /></div>
+                        <div className="item-text">
+                            <label>Số điện thoại</label>
+                            <p>{info.phone}</p>
+                        </div>
+                        <button
+                            className="copy-btn-mini"
+                            onClick={() => handleCopy(info.phone, 'phone')}
+                            title="Copy SĐT"
+                        >
+                            {copyStatus.phone ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                        </button>
+                    </div>
+
+                    <div className="info-item">
+                        <div className="item-icon"><BookOpen size={18} /></div>
+                        <div className="item-text">
+                            <label>{info.detailLabel}</label>
+                            <p>{info.detail}</p>
+                        </div>
+                    </div>
+
+                    {info.detailExtra && (
+                        <div className="info-item">
+                            <div className="item-icon"><MapPin size={18} /></div>
+                            <div className="item-text">
+                                <label>Khoa</label>
+                                <p>{info.detailExtra}</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -222,98 +310,49 @@ const QuestionDetail = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    <div className={`chat-input-area ${isResolved ? 'disabled-chat' : ''}`}>
-                        <button className="btn-icon" title="Đính kèm tệp" disabled={isResolved}>
+                    <div className={`chat-input-area ${isReadOnly ? 'disabled-chat' : ''}`}>
+                        <button className="btn-icon" title="Đính kèm tệp" disabled={isReadOnly}>
                             <Paperclip size={20} />
                         </button>
                         <input
                             type="text"
                             className="chat-input"
-                            placeholder={isResolved ? "Cuộc trò chuyện này đã kết thúc." : "Nhập tin nhắn..."}
+                            placeholder={
+                                role === 'admin' ? "Quản trị viên chỉ có quyền xem ẩn danh." :
+                                isResolved ? "Cuộc trò chuyện này đã kết thúc." : "Nhập tin nhắn..."
+                            }
                             value={inputMessage}
                             onChange={(e) => setInputMessage(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            disabled={isResolved}
+                            disabled={isReadOnly}
                         />
-                        <button className="btn-send-chat" onClick={handleSend} disabled={!inputMessage.trim() || isResolved}>
+                        <button className="btn-send-chat" onClick={handleSend} disabled={!inputMessage.trim() || isReadOnly}>
                             <Send size={20} />
                         </button>
                     </div>
                 </div>
 
-                <aside className="participant-info-sidebar">
-                    <div className="info-header">
-                        <div className="big-avatar-circle">
-                            <img
-                                src={`https://ui-avatars.com/api/?name=${(displayInfo.avatar || "U").replace(/ /g, '+')}&background=random&size=128&color=fff`}
-                                alt="Avatar"
-                            />
-                        </div>
-                        <h2 className="display-name">{displayInfo.name}</h2>
-                        <span className="role-tag">{displayInfo.roleLabel}</span>
-                    </div>
-
-                    <div className="info-body">
-                        <div className="info-section">
-                            <p className="section-title">Thông tin</p>
-
-                            <div className="info-item">
-                                <div className="item-icon"><User size={18} /></div>
-                                <div className="item-text">
-                                    <label>{displayInfo.idLabel}</label>
-                                    <p>{displayInfo.id}</p>
+                <aside className="participant-info-sidebar" style={{ overflowY: 'auto' }}>
+                    {role === 'admin' ? (
+                        <>
+                            {renderParticipantInfo(studentInfo, 0)}
+                            {renderParticipantInfo(cvhtInfo, 1)}
+                        </>
+                    ) : (
+                        <>
+                            <div className="info-header">
+                                <div className="big-avatar-circle">
+                                    <img
+                                        src={`https://ui-avatars.com/api/?name=${(displayInfo.avatar || "U").replace(/ /g, '+')}&background=random&size=128&color=fff`}
+                                        alt="Avatar"
+                                    />
                                 </div>
+                                <h2 className="display-name">{displayInfo.name}</h2>
+                                <span className="role-tag">{displayInfo.roleLabel}</span>
                             </div>
-
-                            <div className="info-item">
-                                <div className="item-icon"><Mail size={18} /></div>
-                                <div className="item-text">
-                                    <label>Email</label>
-                                    <p>{displayInfo.email}</p>
-                                </div>
-                                <button
-                                    className="copy-btn-mini"
-                                    onClick={() => handleCopy(displayInfo.email, 'email')}
-                                    title="Copy Email"
-                                >
-                                    {copyStatus.email ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                                </button>
-                            </div>
-
-                            <div className="info-item">
-                                <div className="item-icon"><Phone size={18} /></div>
-                                <div className="item-text">
-                                    <label>Số điện thoại</label>
-                                    <p>{displayInfo.phone}</p>
-                                </div>
-                                <button
-                                    className="copy-btn-mini"
-                                    onClick={() => handleCopy(displayInfo.phone, 'phone')}
-                                    title="Copy SĐT"
-                                >
-                                    {copyStatus.phone ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                                </button>
-                            </div>
-
-                            <div className="info-item">
-                                <div className="item-icon"><BookOpen size={18} /></div>
-                                <div className="item-text">
-                                    <label>{displayInfo.detailLabel}</label>
-                                    <p>{displayInfo.detail}</p>
-                                </div>
-                            </div>
-
-                            {displayInfo.detailExtra && (
-                                <div className="info-item">
-                                    <div className="item-icon"><MapPin size={18} /></div>
-                                    <div className="item-text">
-                                        <label>Khoa</label>
-                                        <p>{displayInfo.detailExtra}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                            {renderParticipantInfo(displayInfo, 0)}
+                        </>
+                    )}
 
                     <div className="info-footer">
                         <div className="action-buttons">

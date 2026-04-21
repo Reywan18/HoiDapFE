@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom';
 
-import Sidebar from './components/Sidebar';
-import QuestionList from './components/QuestionList';
-import Profile from './components/Profile';
-import NewQuestion from './components/NewQuestion';
-import QuestionDetail from './components/QuestionDetail';
-import FAQ from './components/FAQ';
+import Sidebar from './components/layout/Sidebar';
+import QuestionList from './components/student/QuestionList';
+import Profile from './components/common/Profile';
+import NewQuestion from './components/student/NewQuestion';
+import QuestionDetail from './components/common/QuestionDetail';
+import FAQ from './components/common/FAQ';
+import Chatbot from './components/student/Chatbot';
 
-import CVHTDashboard from './components/CVHTDashboard';
-import PendingQuestions from './components/PendingQuestions';
-import CVHTReports from './components/CVHTReports';
+import CVHTDashboard from './components/cvht/CVHTDashboard';
+import PendingQuestions from './components/cvht/PendingQuestions';
+import CVHTReports from './components/cvht/CVHTReports';
+import AdminDashboard from './components/admin/AdminDashboard';
+import ClassManagement from './components/admin/ClassManagement';
+import StudentManagement from './components/admin/StudentManagement';
+import CVHTManagement from './components/admin/CVHTManagement';
+import QuestionManagement from './components/admin/QuestionManagement';
+import FAQManagement from './components/admin/FAQManagement';
+import AiTraining from './components/admin/AiTraining';
 
-import Login from './components/Login';
+import Login from './components/auth/Login';
 import './App.css';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -46,6 +54,16 @@ const CVHTLayout = () => {
   );
 };
 
+// Layout cho Admin
+const AdminLayout = () => {
+  return (
+    <div className="app-container">
+      <Sidebar />
+      <Outlet />
+    </div>
+  );
+};
+
 function App() {
   const location = useLocation();
 
@@ -55,7 +73,9 @@ function App() {
     const role = localStorage.getItem('role');
 
     if (token && role && location.pathname === '/') {
-      if (role === 'cvht') {
+      if (role === 'admin') {
+        window.location.replace('/admin');
+      } else if (role === 'cvht') {
         window.location.replace('/cvht');
       } else {
         window.location.replace('/sinhvien');
@@ -82,6 +102,7 @@ function App() {
         <Route path="question-detail/:id" element={<QuestionDetail />} />
         <Route path="profile" element={<Profile />} />
         <Route path="faq" element={<FAQ />} />
+        <Route path="chatbot" element={<Chatbot />} />
       </Route>
 
       {/* Routes của CVHT */}
@@ -96,6 +117,24 @@ function App() {
         <Route path="profile" element={<Profile />} />
         <Route path="reports" element={<CVHTReports />} />
         <Route path="knowledge" element={<FAQ />} />
+      </Route>
+
+      {/* Routes của Admin */}
+      <Route path="/admin" element={
+        <ProtectedRoute allowedRole="admin">
+          <AdminLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        {/* Placeholder components, we will implement these shortly */}
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="classes" element={<ClassManagement />} />
+        <Route path="students" element={<StudentManagement />} />
+        <Route path="cvht" element={<CVHTManagement />} />
+        <Route path="questions" element={<QuestionManagement />} />
+        <Route path="question-detail/:id" element={<QuestionDetail />} />
+        <Route path="faqs" element={<FAQManagement />} />
+        <Route path="ai-training" element={<AiTraining />} />
       </Route>
 
       {/* Fallback */}

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, PieChart, Calendar, Download } from 'lucide-react';
-import './QuestionList.css';
-import './CVHTDashboard.css'; // Recycle dashboard styles for charts
-import api from '../services/api';
+import '../common/QuestionList.css';
+import './CVHTDashboard.css';
+import api from '../../services/api';
 
 const CVHTReports = () => {
     const [stats, setStats] = useState({
@@ -44,7 +44,6 @@ const CVHTReports = () => {
         }
     };
 
-    // Derived stats
     const resolved = stats.totalAnswered || 0;
     const resolvedPercent = stats.totalQuestions ? Math.round((resolved / stats.totalQuestions) * 100) : 0;
 

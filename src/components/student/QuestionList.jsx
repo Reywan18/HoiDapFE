@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import './QuestionList.css';
-import api, { userApi, conversationApi } from '../services/api';
+import '../common/QuestionList.css';
+import api, { userApi, conversationApi } from '../../services/api';
 
 const QuestionList = () => {
     const navigate = useNavigate();
@@ -16,11 +16,10 @@ const QuestionList = () => {
         fetchQuestions();
     }, [page]);
 
-    // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
             if (page === 0) fetchQuestions();
-            else setPage(0); // This will trigger the first useEffect
+            else setPage(0);
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
@@ -28,10 +27,9 @@ const QuestionList = () => {
     const fetchQuestions = async () => {
         setLoading(true);
         try {
-            // Lấy profile để biết mã SV
             const pRes = await userApi.getProfile();
             const maSv = pRes.data.data.maDinhDanh;
-            
+
             if (!maSv) {
                 console.error("Không tìm thấy maSv trong profile");
                 return;
@@ -41,7 +39,7 @@ const QuestionList = () => {
                 page: page,
                 size: 10
             });
-            
+
             if (response.data && response.data.data) {
                 const pageData = response.data.data;
                 setQuestions(pageData.content || []);
@@ -62,10 +60,10 @@ const QuestionList = () => {
 
     const getStatusClass = (status) => {
         switch (String(status).toUpperCase()) {
-            case 'WAITING_FOR_CVHT': return 'pending'; 
-            case 'CHATTING_WITH_CVHT': return 'processing'; 
+            case 'WAITING_FOR_CVHT': return 'pending';
+            case 'CHATTING_WITH_CVHT': return 'processing';
             case 'CHATTING_WITH_BOT': return 'processing';
-            case 'RESOLVED': return 'completed'; 
+            case 'RESOLVED': return 'completed';
             default: return '';
         }
     };

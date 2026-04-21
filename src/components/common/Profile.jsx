@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Camera, Edit3, Save, X, Lock, Eye, EyeOff } from 'lucide-react';
 import './QuestionList.css'; // Re-use common styles
 import './Profile.css';
-import api, { userApi, authApi } from '../services/api';
+import api, { userApi, authApi } from '../../services/api';
 
 const Profile = () => {
     const userRole = localStorage.getItem('role');

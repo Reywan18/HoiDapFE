@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, User, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import './QuestionList.css';
+import '../common/QuestionList.css';
 import './CVHTQuestions.css';
-import { userApi, conversationApi } from '../services/api';
+import { userApi, conversationApi } from '../../services/api';
 
 const PendingQuestions = () => {
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ const PendingQuestions = () => {
                 // Get CVHT info
                 const pRes = await userApi.getProfile();
                 console.log("Raw pRes:", pRes);
-                
+
                 // Trường hợp api trả về ApiResponse bọc trong axios data
                 // hoặc api interceptor đã unwrap dữ liệu
                 const profile = pRes.data?.data || pRes.data;

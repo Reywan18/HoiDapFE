@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, ChevronUp, HelpCircle, Filter } from 'lucide-react';
-import { faqApi } from '../services/api';
+import { faqApi } from '../../services/api';
 import './QuestionList.css'; // Common styles
 import './FAQ.css';
 

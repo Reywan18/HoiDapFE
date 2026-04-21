@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Accessibility, Key, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
-import buildingImg from '../assets/Ảnh_bìa_tlu.png';
-import api, { authApi } from '../services/api';
+import buildingImg from '../../assets/Ảnh_bìa_tlu.png';
+import api, { authApi } from '../../services/api';
 
 // SVG Icon for Microsoft/Office (simplified)
 const OfficeIcon = () => (
@@ -61,7 +61,10 @@ const Login = () => {
                 if (decoded) {
                     // Check common claim names
                     const rawRole = decoded.role || decoded.roles || decoded.scope || '';
-                    if (String(rawRole).toLowerCase().includes('cvht') || String(rawRole).toLowerCase().includes('admin') || String(rawRole).toLowerCase().includes('teacher')) {
+                    const lowerRole = String(rawRole).toLowerCase();
+                    if (lowerRole.includes('admin')) {
+                        role = 'admin';
+                    } else if (lowerRole.includes('cvht') || lowerRole.includes('teacher')) {
                         role = 'cvht';
                     }
                     // Save user info if available
@@ -69,7 +72,9 @@ const Login = () => {
                 }
 
                 localStorage.setItem('role', role);
-                if (role === 'cvht') {
+                if (role === 'admin') {
+                    navigate('/admin');
+                } else if (role === 'cvht') {
                     navigate('/cvht');
                 } else {
                     navigate('/sinhvien');

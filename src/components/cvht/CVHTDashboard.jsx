@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CVHTDashboard.css';
-import api from '../services/api';
+import api from '../../services/api';
 
 const CVHTDashboard = () => {
     const navigate = useNavigate();

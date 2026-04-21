@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, User, Clock, CheckCircle, BookOpen, Layers, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import './QuestionList.css';
+import '../common/QuestionList.css';
 import './CVHTQuestions.css';
-import api from '../services/api';
+import api from '../../services/api';
 
 const ProcessingQuestions = () => {
     const navigate = useNavigate();
@@ -14,19 +14,16 @@ const ProcessingQuestions = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Filters
     const [statusFilter, setStatusFilter] = useState('ANSWER');
     const [classFilter, setClassFilter] = useState('');
     const [cohortFilter, setCohortFilter] = useState('');
     const [majorFilter, setMajorFilter] = useState('');
     const [yearFilter, setYearFilter] = useState('');
 
-    // Data for dropdowns
     const [classes, setClasses] = useState([]);
     const [cohorts, setCohorts] = useState([]);
     const [majors, setMajors] = useState([]);
 
-    // Generate years list (e.g. 5 years back, 1 year forward)
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 6 }, (_, i) => currentYear - 4 + i).reverse();
 
@@ -50,7 +47,6 @@ const ProcessingQuestions = () => {
         fetchQuestions();
     }, [page, statusFilter, classFilter, cohortFilter, majorFilter, yearFilter]);
 
-    // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchQuestions();

@@ -99,4 +99,9 @@ export const faqApi = {
     getById: (id) => api.get(`/faq/${id}`),
 };
 
+// AI Chatbot APIs
+export const aiApi = {
+    chat: (message) => api.post('/ai/chat', { message })
+};
+
 export default api;
