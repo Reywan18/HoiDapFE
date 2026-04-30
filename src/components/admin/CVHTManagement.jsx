@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import api from '../../services/api';
+import ConfirmModal from '../common/ConfirmModal';
 
 const CVHTManagement = () => {
+    const { toggleSidebar } = useOutletContext();
     const [advisors, setAdvisors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,6 +18,8 @@ const CVHTManagement = () => {
     // Modal states
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [advisorToDelete, setAdvisorToDelete] = useState(null);
     const [createMaCv, setCreateMaCv] = useState('');
     const [newAccountInfo, setNewAccountInfo] = useState(null);
     const [currentAdvisor, setCurrentAdvisor] = useState(null);
@@ -75,7 +81,7 @@ const CVHTManagement = () => {
                 fetchData();
             }
         } catch (error) {
-            alert('Lỗi tạo CVHT: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi tạo CVHT: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -98,33 +104,44 @@ const CVHTManagement = () => {
                 soDienThoai: currentAdvisor.soDienThoai,
                 chuyenMon: currentAdvisor.chuyenMon
             });
-            alert('Cập nhật thành công!');
+            toast.success('Cập nhật thành công!');
             setIsEditModalOpen(false);
             fetchData();
         } catch (error) {
-            alert('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
         }
     };
 
     // --- Delete CVHT ---
-    const handleDelete = async (id) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa hệ thống tài khoản CVHT ${id}? Hành động này không thể hoàn tác.`)) {
-            try {
-                await api.delete(`/admin/users/cvht/${id}`);
-                fetchData();
-            } catch (error) {
-                alert('Lỗi xóa CVHT: Đảm bảo Cố vấn này không được trỏ đến Lớp học nào.');
-            }
+    const handleDelete = (id) => {
+        setAdvisorToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await api.delete(`/admin/users/cvht/${advisorToDelete}`);
+            toast.success('Đã xóa CVHT thành công!');
+            fetchData();
+        } catch (error) {
+            toast.error('Lỗi xóa CVHT: Đảm bảo Cố vấn này không được trỏ đến Lớp học nào.');
         }
     };
 
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Quản lý CVHT</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Quản Lý CVHT</span>
+                        <span className="indicator-text">Quản trị viên</span>
                     </div>
                 </div>
             </header>
@@ -316,13 +333,17 @@ const CVHTManagement = () => {
                             </div>
                             <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>Chuyên Môn</label>
-                                <input
-                                    type="text"
-                                    placeholder="Khoa CNTT, Phân tích dữ liệu..."
+                                <select
                                     value={currentAdvisor.chuyenMon}
                                     onChange={(e) => setCurrentAdvisor({ ...currentAdvisor, chuyenMon: e.target.value })}
-                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none' }}
-                                />
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', backgroundColor: '#fff' }}
+                                >
+                                    <option value="">-- Chọn Chuyên Môn --</option>
+                                    <option value="Học tập">Học tập</option>
+                                    <option value="Tài chính">Tài chính</option>
+                                    <option value="Kỷ luật">Kỷ luật</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
                             </div>
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>Số điện thoại</label>
@@ -341,6 +362,15 @@ const CVHTManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận xóa"
+                message={`Bạn có chắc chắn muốn xóa hệ thống tài khoản CVHT ${advisorToDelete}? Hành động này không thể hoàn tác.`}
+                confirmText="Xóa tài khoản"
+            />
         </main>
     );
 };

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Plus, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Bell, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import '../common/QuestionList.css';
 import api, { userApi, conversationApi } from '../../services/api';
 
 const QuestionList = () => {
+    const { toggleSidebar } = useOutletContext();
     const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -81,10 +82,17 @@ const QuestionList = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Câu hỏi của tôi</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Câu hỏi của tôi</span>
+                        <span className="indicator-text">Sinh viên</span>
                     </div>
                 </div>
             </header>

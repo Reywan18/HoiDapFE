@@ -32,6 +32,20 @@
     border: 1px solid #f1f5f9;
 }
 
+.dashboard-title-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mobile-toggle-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: #64748b;
+    padding: 4px;
+}
+
 .dashboard-title h1 {
     font-size: 24px;
     font-weight: 700;
@@ -203,6 +217,14 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .dashboard-container {
+        padding: 16px;
+    }
+
+    .mobile-toggle-btn {
+        display: block;
+    }
+
     .charts-grid, .leaderboard-grid {
         grid-template-columns: 1fr;
     }
@@ -210,6 +232,21 @@
     .dashboard-header {
         flex-direction: column;
         gap: 16px;
-        text-align: center;
+        align-items: flex-start;
+        padding: 16px;
+    }
+
+    .dashboard-title h1 {
+        font-size: 20px;
+    }
+
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
     }
 }

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import { aiApi } from '../../services/api';
 import './Chatbot.css';
 
 const Chatbot = () => {
+    const { toggleSidebar } = useOutletContext();
     const [messages, setMessages] = useState([
         {
             id: 1,
@@ -84,16 +86,33 @@ const Chatbot = () => {
     };
 
     return (
-        <div className="chatbot-container">
-            <div className="chatbot-header">
-                <div className="header-icon-wrapper">
-                    <Sparkles className="sparkles-icon" size={24} />
+        <main className="main-content">
+            <header className="top-bar">
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
                 </div>
-                <div>
-                    <h2 className="chatbot-title">Hỏi Đáp Nhanh - AI</h2>
-                    <p className="chatbot-subtitle">Hệ thống thông minh truy xuất trực tiếp Quy chế và Sổ tay SV</p>
+                <div className="top-bar-center">
+                    <span>Hỏi đáp nhanh AI</span>
                 </div>
-            </div>
+                <div className="top-bar-right">
+                    <div className="user-indicator">
+                        <span className="indicator-text">Sinh viên</span>
+                    </div>
+                </div>
+            </header>
+
+            <div className="content-container chatbot-container">
+                <div className="chatbot-header">
+                    <div className="header-icon-wrapper">
+                        <Sparkles className="sparkles-icon" size={24} />
+                    </div>
+                    <div>
+                        <h2 className="chatbot-title">Hỏi Đáp Nhanh - AI</h2>
+                        <p className="chatbot-subtitle">Hệ thống thông minh truy xuất trực tiếp Quy chế và Sổ tay SV</p>
+                    </div>
+                </div>
 
             <div className="chatbot-messages-area">
                 <div className="messages-stream">
@@ -152,7 +171,8 @@ const Chatbot = () => {
                     </button>
                 </form>
             </div>
-        </div>
+            </div>
+        </main>
     );
 };
 

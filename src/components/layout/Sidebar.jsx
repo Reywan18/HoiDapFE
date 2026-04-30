@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2, Bot } from 'lucide-react';
+import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2, Bot, X as CloseIcon, Menu } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import ConfirmModal from '../common/ConfirmModal';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const current = location.pathname;
@@ -13,6 +14,7 @@ const Sidebar = () => {
         name: role === 'admin' ? "Quản trị viên" : (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên"),
         role: role === 'admin' ? "Hệ thống" : (role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long")
     });
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -26,8 +28,12 @@ const Sidebar = () => {
                 }).join(''));
 
                 const payload = JSON.parse(jsonPayload);
+                const displayName = (role === 'admin') 
+                    ? "Quản trị viên" 
+                    : (payload.hoTen || payload.name || (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên"));
+
                 setUserData({
-                    name: payload.hoTen || payload.name || (role === 'admin' ? "Quản trị viên" : (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên")),
+                    name: displayName,
                     role: role === 'admin' ? "Hệ thống" : (role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long")
                 });
             } catch (e) {
@@ -38,11 +44,13 @@ const Sidebar = () => {
 
     const handleLogout = (e) => {
         e.preventDefault();
-        if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            navigate('/login');
-        }
+        setIsLogoutModalOpen(true);
+    };
+
+    const confirmLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        navigate('/login');
     };
 
     let navItems = [];
@@ -74,13 +82,26 @@ const Sidebar = () => {
     }
 
     return (
-        <aside className="sidebar">
-            <div className="sidebar-header">
-                <div className="logo-area">
-                    <MessageSquare className="logo-icon" size={24} />
-                    <span className="logo-text">Hệ thống Hỏi đáp</span>
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
+
+            <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+                <div className="sidebar-header">
+                    <div className="logo-area">
+                        <MessageSquare className="logo-icon" size={24} />
+                        <span className="logo-text">Hệ thống Hỏi đáp</span>
+                        {/* Mobile Close Button */}
+                        <button className="mobile-close-btn" onClick={onClose} style={{
+                            display: 'none',
+                            marginLeft: 'auto',
+                            background: 'none',
+                            color: '#64748b'
+                        }}>
+                            <CloseIcon size={24} />
+                        </button>
+                    </div>
                 </div>
-            </div>
 
             <div className="user-profile">
                 <div className="avatar">
@@ -97,14 +118,17 @@ const Sidebar = () => {
 
             <nav className="sidebar-nav">
                 {navItems.map((item) => (
-                    <Link
-                        key={item.id}
-                        to={item.to}
-                        className={`nav-item ${current.includes(item.id) ? 'active' : ''}`}
-                    >
-                        <item.icon size={20} />
-                        <span>{item.label}</span>
-                    </Link>
+                        <Link
+                            key={item.id}
+                            to={item.to}
+                            className={`nav-item ${current.includes(item.id) ? 'active' : ''}`}
+                            onClick={() => {
+                                if (window.innerWidth <= 768) onClose();
+                            }}
+                        >
+                            <item.icon size={20} />
+                            <span>{item.label}</span>
+                        </Link>
                 ))}
             </nav>
 
@@ -114,7 +138,24 @@ const Sidebar = () => {
                     <span>Đăng xuất</span>
                 </button>
             </div>
-        </aside>
+
+            <ConfirmModal 
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={confirmLogout}
+                title="Xác nhận đăng xuất"
+                message="Bạn có chắc chắn muốn thoát khỏi hệ thống không?"
+                confirmText="Đăng xuất"
+                type="danger"
+            />
+            </aside>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media (max-width: 768px) {
+                    .mobile-close-btn { display: block !important; }
+                }
+            `}} />
+        </>
     );
 };
 

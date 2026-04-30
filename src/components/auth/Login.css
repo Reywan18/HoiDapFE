@@ -370,3 +370,11 @@
     font-size: 24px;
     line-height: 10px;
 }
+
+@media (max-width: 480px) {
+    .ms-login-card, .ms-opts-card {
+        width: 100%;
+        padding: 24px;
+        box-shadow: none;
+    }
+}

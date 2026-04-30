@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 import Sidebar from './components/layout/Sidebar';
 import QuestionList from './components/student/QuestionList';
@@ -34,32 +35,17 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   return children;
 };
 
-// Layout cho Sinh Viên
-const StudentLayout = () => {
+// Layout Chung hỗ trợ Responsive
+const MainLayout = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   return (
     <div className="app-container">
-      <Sidebar />
-      <Outlet />
-    </div>
-  );
-};
-
-// Layout cho CVHT
-const CVHTLayout = () => {
-  return (
-    <div className="app-container">
-      <Sidebar />
-      <Outlet />
-    </div>
-  );
-};
-
-// Layout cho Admin
-const AdminLayout = () => {
-  return (
-    <div className="app-container">
-      <Sidebar />
-      <Outlet />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      {/* Cung cấp context hoặc props để các page con có thể toggle sidebar */}
+      <div className="main-content">
+        <Outlet context={{ toggleSidebar: () => setIsSidebarOpen(true) }} />
+      </div>
     </div>
   );
 };
@@ -86,60 +72,63 @@ function App() {
   }, [location]);
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<Login />} />
+    <>
+      <Toaster position="top-right" reverseOrder={false} />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
 
-      {/* Routes của Sinh Viên */}
-      <Route path="/sinhvien" element={
-        <ProtectedRoute allowedRole="student">
-          <StudentLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="my-question" replace />} />
-        <Route path="my-question" element={<QuestionList />} />
-        <Route path="new-question" element={<NewQuestion />} />
-        <Route path="question-detail/:id" element={<QuestionDetail />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="faq" element={<FAQ />} />
-        <Route path="chatbot" element={<Chatbot />} />
-      </Route>
+        {/* Routes của Sinh Viên */}
+        <Route path="/sinhvien" element={
+          <ProtectedRoute allowedRole="student">
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="my-question" replace />} />
+          <Route path="my-question" element={<QuestionList />} />
+          <Route path="new-question" element={<NewQuestion />} />
+          <Route path="question-detail/:id" element={<QuestionDetail />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="faq" element={<FAQ />} />
+          <Route path="chatbot" element={<Chatbot />} />
+        </Route>
 
-      {/* Routes của CVHT */}
-      <Route path="/cvht" element={
-        <ProtectedRoute allowedRole="cvht">
-          <CVHTLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="pending" replace />} />
-        <Route path="pending" element={<PendingQuestions />} />
-        <Route path="question-detail/:id" element={<QuestionDetail />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="reports" element={<CVHTReports />} />
-        <Route path="knowledge" element={<FAQ />} />
-      </Route>
+        {/* Routes của CVHT */}
+        <Route path="/cvht" element={
+          <ProtectedRoute allowedRole="cvht">
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="pending" replace />} />
+          <Route path="pending" element={<PendingQuestions />} />
+          <Route path="question-detail/:id" element={<QuestionDetail />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="reports" element={<CVHTReports />} />
+          <Route path="knowledge" element={<FAQ />} />
+        </Route>
 
-      {/* Routes của Admin */}
-      <Route path="/admin" element={
-        <ProtectedRoute allowedRole="admin">
-          <AdminLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        {/* Placeholder components, we will implement these shortly */}
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="classes" element={<ClassManagement />} />
-        <Route path="students" element={<StudentManagement />} />
-        <Route path="cvht" element={<CVHTManagement />} />
-        <Route path="questions" element={<QuestionManagement />} />
-        <Route path="question-detail/:id" element={<QuestionDetail />} />
-        <Route path="faqs" element={<FAQManagement />} />
-        <Route path="ai-training" element={<AiTraining />} />
-      </Route>
+        {/* Routes của Admin */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRole="admin">
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          {/* Placeholder components, we will implement these shortly */}
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="classes" element={<ClassManagement />} />
+          <Route path="students" element={<StudentManagement />} />
+          <Route path="cvht" element={<CVHTManagement />} />
+          <Route path="questions" element={<QuestionManagement />} />
+          <Route path="question-detail/:id" element={<QuestionDetail />} />
+          <Route path="faqs" element={<FAQManagement />} />
+          <Route path="ai-training" element={<AiTraining />} />
+        </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 

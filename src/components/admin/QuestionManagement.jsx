@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit2, Trash2, X, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Edit2, Trash2, X, ChevronLeft, ChevronRight, Eye, Menu } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css'; 
 import api from '../../services/api';
+import ConfirmModal from '../common/ConfirmModal';
 
 const QuestionManagement = () => {
+    const { toggleSidebar } = useOutletContext();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +18,8 @@ const QuestionManagement = () => {
     
     // Modal states
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [questionToDelete, setQuestionToDelete] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(null);
 
     // Fetch data
@@ -76,23 +81,27 @@ const QuestionManagement = () => {
                 tieuDe: currentQuestion.tieuDe,
                 trangThai: currentQuestion.trangThai
             });
-            alert('Cập nhật trạng thái câu hỏi thành công!');
+            toast.success('Cập nhật trạng thái câu hỏi thành công!');
             setIsEditModalOpen(false);
             fetchData();
         } catch (error) {
-            alert('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
         }
     };
 
     // --- Delete Question ---
-    const handleDelete = async (id) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn Câu hỏi #${id} cùng tất cả tin nhắn bên trong? Hành động này không thể hoàn tác.`)) {
-            try {
-                await api.delete(`/admin/questions/${id}`);
-                fetchData();
-            } catch (error) {
-                alert('Lỗi xóa câu hỏi: ' + (error.response?.data?.message || error.message));
-            }
+    const handleDelete = (id) => {
+        setQuestionToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await api.delete(`/admin/questions/${questionToDelete}`);
+            toast.success('Đã xóa câu hỏi thành công!');
+            fetchData();
+        } catch (error) {
+            toast.error('Lỗi xóa câu hỏi: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -117,10 +126,17 @@ const QuestionManagement = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Quản lý Câu hỏi</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Quản Lý Câu Hỏi</span>
+                        <span className="indicator-text">Quản trị viên</span>
                     </div>
                 </div>
             </header>
@@ -287,6 +303,15 @@ const QuestionManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận xóa"
+                message={`Bạn có chắc chắn muốn xóa vĩnh viễn Câu hỏi #${questionToDelete} cùng tất cả tin nhắn bên trong? Hành động này không thể hoàn tác.`}
+                confirmText="Xóa vĩnh viễn"
+            />
         </main>
     );
 };

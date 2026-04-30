@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, HelpCircle, Filter } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, HelpCircle, Filter, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import { faqApi } from '../../services/api';
 import './QuestionList.css'; // Common styles
 import './FAQ.css';
 
 const FAQ = () => {
+    const { toggleSidebar } = useOutletContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [openId, setOpenId] = useState(null);
     const [faqs, setFaqs] = useState([]);
@@ -75,10 +77,17 @@ const FAQ = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Kho tri thức (FAQ)</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Kho kiến thức (FAQ)</span>
+                        <span className="indicator-text">Sinh viên</span>
                     </div>
                 </div>
             </header>

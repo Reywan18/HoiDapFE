@@ -123,9 +123,17 @@ const ProcessingQuestions = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Lịch sử trả lời</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Lịch sử trả lời</span>
+                        <span className="indicator-text">Cố vấn</span>
                     </div>
                 </div>
             </header>

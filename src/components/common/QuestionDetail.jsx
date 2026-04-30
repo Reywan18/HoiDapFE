@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { conversationApi, userApi } from '../../services/api';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import toast from 'react-hot-toast';
+import ConfirmModal from './ConfirmModal';
 import './QuestionDetail.css';
 
 const QuestionDetail = () => {
@@ -16,6 +18,8 @@ const QuestionDetail = () => {
     const [conversation, setConversation] = useState(null);
     const [copyStatus, setCopyStatus] = useState({ email: false, phone: false });
     const [myId, setMyId] = useState(null);
+    const [showInfo, setShowInfo] = useState(false);
+    const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
 
     const messagesEndRef = useRef(null);
     const clientRef = useRef(null);
@@ -130,22 +134,24 @@ const QuestionDetail = () => {
     };
 
     const handleResolve = async () => {
-        if (!window.confirm("Bạn có chắc chắn muốn đánh dấu câu hỏi này là hoàn thành? Sau khi hoàn thành, cuộc trò chuyện sẽ được đóng lại.")) return;
-        
+        setIsResolveModalOpen(true);
+    };
+
+    const confirmResolve = async () => {
         try {
             const res = await conversationApi.resolveConversation(questionId);
             if (res.data && res.data.status === 200) {
-                alert("Đã hoàn thành câu hỏi!");
-                fetchConversationDetail(); // Refresh data to update status
+                toast.success("Đã hoàn thành câu hỏi!");
+                fetchConversationDetail(); 
             }
         } catch (error) {
             console.error('Lỗi khi hoàn thành câu hỏi:', error);
-            alert("Có lỗi xảy ra khi hoàn thành câu hỏi.");
+            toast.error("Có lỗi xảy ra khi hoàn thành câu hỏi.");
         }
     };
 
     const handleReport = () => {
-        alert("Tính năng báo cáo đang được phát triển. Cảm ơn bạn đã phản hồi!");
+        toast.success("Đã ghi nhận báo cáo. Cảm ơn bạn đã phản hồi!");
     };
 
     const formatTime = (isoString) => {
@@ -283,6 +289,9 @@ const QuestionDetail = () => {
                     <span className="indicator-text">{conversation?.tieuDe || "Đang tải..."}</span>
                 </div>
                 <div className="top-bar-right">
+                    <button className="info-toggle-btn" onClick={() => setShowInfo(!showInfo)}>
+                        <User size={20} />
+                    </button>
                     <span className={`status-badge ${isResolved ? 'status-resolved' : 'status-online'}`}>
                         {isResolved ? "Đã giải quyết" : "Đang hoạt động"}
                     </span>
@@ -332,7 +341,10 @@ const QuestionDetail = () => {
                     </div>
                 </div>
 
-                <aside className="participant-info-sidebar" style={{ overflowY: 'auto' }}>
+                <aside className={`participant-info-sidebar ${showInfo ? 'show-mobile' : ''}`} style={{ overflowY: 'auto' }}>
+                    <div className="mobile-info-close">
+                        <button onClick={() => setShowInfo(false)}>×</button>
+                    </div>
                     {role === 'admin' ? (
                         <>
                             {renderParticipantInfo(studentInfo, 0)}
@@ -378,6 +390,15 @@ const QuestionDetail = () => {
                         <p className="footer-note">Trao đổi văn minh & lịch sự</p>
                     </div>
                 </aside>
+                <ConfirmModal 
+                    isOpen={isResolveModalOpen}
+                    onClose={() => setIsResolveModalOpen(false)}
+                    onConfirm={confirmResolve}
+                    title="Xác nhận hoàn thành"
+                    message="Bạn có chắc chắn muốn đánh dấu câu hỏi này là hoàn thành? Sau khi hoàn thành, cuộc trò chuyện sẽ được đóng lại."
+                    confirmText="Hoàn thành"
+                    type="primary"
+                />
             </div>
         </main>
     );

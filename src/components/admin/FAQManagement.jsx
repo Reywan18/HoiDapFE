@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, BookOpen, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import api from '../../services/api';
+import ConfirmModal from '../common/ConfirmModal';
 
 const FAQManagement = () => {
+    const { toggleSidebar } = useOutletContext();
     const [faqs, setFaqs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,6 +18,8 @@ const FAQManagement = () => {
     // Modal states
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [faqToDelete, setFaqToDelete] = useState(null);
 
     const initialFaqState = {
         chuDe: '',
@@ -73,12 +79,12 @@ const FAQManagement = () => {
         try {
             const res = await api.post('/admin/faqs', currentFaq);
             if (res.data.status === 200) {
-                alert('Tạo FAQ thành công!');
+                toast.success('Tạo FAQ thành công!');
                 setIsCreateModalOpen(false);
                 fetchData();
             }
         } catch (error) {
-            alert('Lỗi tạo FAQ: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi tạo FAQ: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -100,33 +106,44 @@ const FAQManagement = () => {
         e.preventDefault();
         try {
             await api.put(`/admin/faqs/${currentFaq.maFaq}`, currentFaq);
-            alert('Cập nhật thành công!');
+            toast.success('Cập nhật thành công!');
             setIsEditModalOpen(false);
             fetchData();
         } catch (error) {
-            alert('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
         }
     };
 
     // --- Delete FAQ ---
-    const handleDelete = async (id) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa bản ghi FAQ #${id}?`)) {
-            try {
-                await api.delete(`/admin/faqs/${id}`);
-                fetchData();
-            } catch (error) {
-                alert('Lỗi xóa FAQ: ' + (error.response?.data?.message || error.message));
-            }
+    const handleDelete = (id) => {
+        setFaqToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await api.delete(`/admin/faqs/${faqToDelete}`);
+            toast.success('Xóa FAQ thành công!');
+            fetchData();
+        } catch (error) {
+            toast.error('Lỗi xóa FAQ: ' + (error.response?.data?.message || error.message));
         }
     };
 
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Quản lý FAQ</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Quản Lý FAQ</span>
+                        <span className="indicator-text">Quản trị viên</span>
                     </div>
                 </div>
             </header>
@@ -335,6 +352,15 @@ const FAQManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận xóa"
+                message={`Bạn có chắc chắn muốn xóa bản ghi FAQ #${faqToDelete}?`}
+                confirmText="Xóa FAQ"
+            />
         </main>
     );
 };

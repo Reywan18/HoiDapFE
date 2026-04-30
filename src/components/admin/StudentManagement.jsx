@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Users, Search, Plus, Edit2, Trash2, X, AlertCircle, ChevronLeft, ChevronRight
+    Users, Search, Plus, Edit2, Trash2, X, AlertCircle, ChevronLeft, ChevronRight, Menu
 } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import api from '../../services/api';
+import ConfirmModal from '../common/ConfirmModal';
 
 const StudentManagement = () => {
+    const { toggleSidebar } = useOutletContext();
     const [students, setStudents] = useState([]);
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,7 +21,8 @@ const StudentManagement = () => {
     // Modal states
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [createMaSv, setCreateMaSv] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [studentToDelete, setStudentToDelete] = useState(null);
     const [newAccountInfo, setNewAccountInfo] = useState(null); // To show generated password
     const [currentStudent, setCurrentStudent] = useState(null);
 
@@ -87,7 +92,7 @@ const StudentManagement = () => {
                 // We keep modal open to show password
             }
         } catch (error) {
-            alert('Lỗi tạo sinh viên: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi tạo sinh viên: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -116,22 +121,27 @@ const StudentManagement = () => {
             };
 
             await api.put(`/admin/users/students/${currentStudent.maSv}`, payload);
+            toast.success('Cập nhật sinh viên thành công!');
             fetchData();
             setIsEditModalOpen(false);
         } catch (error) {
-            alert('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
         }
     };
 
     // --- Delete Student ---
-    const handleDelete = async (maSv) => {
-        if (window.confirm(`Bạn có chắc muốn xóa sinh viên ${maSv}?`)) {
-            try {
-                await api.delete(`/admin/users/students/${maSv}`);
-                fetchData();
-            } catch (error) {
-                alert('Lỗi xóa sinh viên (Có thể sinh viên này đã có dữ liệu câu hỏi).');
-            }
+    const handleDelete = (maSv) => {
+        setStudentToDelete(maSv);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await api.delete(`/admin/users/students/${studentToDelete}`);
+            toast.success(`Đã xóa sinh viên ${studentToDelete} thành công!`);
+            fetchData();
+        } catch (error) {
+            toast.error('Lỗi xóa sinh viên (Có thể sinh viên này đã có dữ liệu câu hỏi).');
         }
     };
 
@@ -143,10 +153,17 @@ const StudentManagement = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Quản lý Sinh viên</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Quản Lý Sinh Viên</span>
+                        <span className="indicator-text">Quản trị viên</span>
                     </div>
                 </div>
             </header>
@@ -392,6 +409,15 @@ const StudentManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận xóa"
+                message={`Bạn có chắc muốn xóa sinh viên ${studentToDelete}?`}
+                confirmText="Xóa sinh viên"
+            />
         </main>
     );
 };

@@ -8,7 +8,8 @@ import {
     Download,
     Award,
     Clock,
-    Activity
+    Activity,
+    Menu
 } from 'lucide-react';
 import { 
     PieChart, 
@@ -23,10 +24,13 @@ import {
     CartesianGrid,
     Legend
 } from 'recharts';
+import { useOutletContext } from 'react-router-dom';
 import api from '../../services/api';
 import './AdminDashboard.css';
+import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
+    const { toggleSidebar } = useOutletContext();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -61,9 +65,10 @@ const AdminDashboard = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+            toast.success('Xuất báo cáo PDF thành công!');
         } catch (error) {
             console.error('Lỗi khi xuất PDF:', error);
-            alert('Không thể xuất báo cáo PDF. Vui lòng kiểm tra lại quyền truy cập.');
+            toast.error('Không thể xuất báo cáo PDF. Vui lòng kiểm tra lại quyền truy cập.');
         }
     };
 
@@ -90,9 +95,14 @@ const AdminDashboard = () => {
         <div className="dashboard-container">
             {/* Header Section */}
             <header className="dashboard-header">
-                <div className="dashboard-title">
-                    <h1>Báo Cáo Thống Kê Tổng Quan</h1>
-                    <p>Chào mừng Quản trị viên! Đây là dữ liệu vận hành hệ thống tính tới thời điểm hiện tại.</p>
+                <div className="dashboard-title-area">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                    <div className="dashboard-title">
+                        <h1>Báo Cáo Thống Kê Tổng Quan</h1>
+                        <p>Chào mừng Quản trị viên! Đây là dữ liệu vận hành hệ thống tính tới thời điểm hiện tại.</p>
+                    </div>
                 </div>
                 <button 
                     onClick={exportPdf}
@@ -140,7 +150,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Charts Section */}
-            <div className="charts-grid" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="charts-grid">
                 <div className="chart-card">
                     <div className="chart-header">
                         <h3>Tình trạng xử lý câu hỏi</h3>
@@ -167,6 +177,74 @@ const AdminDashboard = () => {
                                 />
                                 <Legend verticalAlign="bottom" height={36}/>
                             </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="chart-card">
+                    <div className="chart-header">
+                        <h3>Hiệu suất chi tiết Cố vấn học tập</h3>
+                        <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%' }}></span> Tích cực
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '8px', height: '8px', backgroundColor: '#f59e0b', borderRadius: '50%' }}></span> Trung bình
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '8px', height: '8px', backgroundColor: '#ef4444', borderRadius: '50%' }}></span> Báo động
+                            </span>
+                        </div>
+                    </div>
+                    <div style={{ height: '350px', width: '100%' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={stats.advisorStats}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#64748b', fontSize: 11 }}
+                                    interval={0}
+                                />
+                                <YAxis 
+                                    domain={[0, 100]}
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#64748b', fontSize: 11 }}
+                                    tickFormatter={(val) => `${val}%`}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: '#f8fafc' }}
+                                    content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                            const data = payload[0].payload;
+                                            return (
+                                                <div style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 8px', fontWeight: '600', color: '#1e293b' }}>{data.name}</p>
+                                                    <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>Hiệu suất: <strong style={{ color: '#0f172a' }}>{data.efficiencyPercentage}%</strong></p>
+                                                    <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>Đã xử lý: <strong style={{ color: '#0f172a' }}>{data.answeredCount}/{data.totalQuestions}</strong></p>
+                                                    <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>Tốc độ: <strong style={{ color: '#0f172a' }}>{data.avgResponseTimeHours?.toFixed(1)}h</strong></p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <Bar dataKey="efficiencyPercentage" radius={[4, 4, 0, 0]} label={{ position: 'top', formatter: (val) => `${val}%`, fontSize: 10, fill: '#64748b' }}>
+                                    {stats.advisorStats.map((entry, index) => {
+                                        // Logic màu sắc theo hiệu suất (%):
+                                        // - Tích cực (Green): >= 80%
+                                        // - Trung bình (Yellow): 40% - 80%
+                                        // - Báo động (Red): < 40%
+                                        let color = '#f59e0b';
+                                        if (entry.efficiencyPercentage >= 80) color = '#10b981';
+                                        else if (entry.efficiencyPercentage < 40) color = '#ef4444';
+                                        
+                                        return <Cell key={`cell-${index}`} fill={color} />;
+                                    })}
+                                </Bar>
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
@@ -217,8 +295,8 @@ const AdminDashboard = () => {
                         <thead>
                             <tr>
                                 <th>Cố vấn</th>
-                                <th>Đã xử lý</th>
-                                <th>Tốc độ TB</th>
+                                <th>Hiệu suất (%)</th>
+                                <th>Xử lý (Xong/Tổng)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -228,12 +306,19 @@ const AdminDashboard = () => {
                                         <div style={{ fontWeight: '600', color: '#1e293b' }}>{adv.name}</div>
                                     </td>
                                     <td>
-                                        <div style={{ fontSize: '13px', fontWeight: '500' }}>{adv.answeredCount}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                                                <div style={{ 
+                                                    width: `${adv.efficiencyPercentage}%`, 
+                                                    height: '100%', 
+                                                    background: adv.efficiencyPercentage >= 80 ? '#10b981' : adv.efficiencyPercentage < 40 ? '#ef4444' : '#f59e0b' 
+                                                }}></div>
+                                            </div>
+                                            <span style={{ fontSize: '12px', fontWeight: '600', minWidth: '40px' }}>{adv.efficiencyPercentage}%</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span className="badge-pill badge-purple">
-                                            {adv.avgResponseTimeHours ? `${adv.avgResponseTimeHours.toFixed(1)}h` : 'N/A'}
-                                        </span>
+                                        <div style={{ fontSize: '13px', fontWeight: '500' }}>{adv.answeredCount}/{adv.totalQuestions}</div>
                                     </td>
                                 </tr>
                             ))}

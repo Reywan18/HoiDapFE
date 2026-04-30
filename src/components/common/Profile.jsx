@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Camera, Edit3, Save, X, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Users, Mail, Phone, MapPin, Calendar, Camera, Edit3, Save, X, Lock, Eye, EyeOff, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import './QuestionList.css'; // Re-use common styles
 import './Profile.css';
 import api, { userApi, authApi } from '../../services/api';
+import toast from 'react-hot-toast';
+import ConfirmModal from './ConfirmModal';
 
 const Profile = () => {
+    const { toggleSidebar } = useOutletContext();
     const userRole = localStorage.getItem('role');
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [profileData, setProfileData] = useState({
         name: "",
@@ -16,7 +21,9 @@ const Profile = () => {
         phone: "",
         className: "",
         faculty: "",
-        dob: ""
+        dob: "",
+        advisor: "",
+        managedClasses: []
     });
 
     useEffect(() => {
@@ -37,7 +44,9 @@ const Profile = () => {
                     phone: u.soDienThoai || "Chưa cập nhật",
                     className: u.maLop || "",
                     faculty: u.chuyenMon || "Khoa Công nghệ Thông tin",
-                    dob: u.ngaySinh || "Chưa cập nhật"
+                    dob: u.ngaySinh || "Chưa cập nhật",
+                    advisor: u.tenCoVan ? `${u.maCoVan} - ${u.tenCoVan}` : "Chưa có Cố vấn",
+                    managedClasses: u.managedClasses || []
                 });
             }
         } catch (error) {
@@ -68,7 +77,9 @@ const Profile = () => {
                     phone: payload.soDienThoai || "Chưa cập nhật",
                     className: payload.maLop || "",
                     faculty: payload.chuyenMon || "Khoa Công nghệ Thông tin",
-                    dob: payload.ngaySinh || "01/01/2000"
+                    dob: payload.ngaySinh || "01/01/2000",
+                    advisor: payload.tenCoVan || "Chưa có Cố vấn",
+                    managedClasses: payload.managedClasses || []
                 });
             } catch (e) {
                 console.error("Failed to parse token", e);
@@ -84,22 +95,25 @@ const Profile = () => {
         }));
     };
 
-    const handleSave = async () => {
-        if (!confirm('Bạn có chắc chắn muốn cập nhật thông tin?')) return;
+    const handleSave = () => {
+        setIsSaveConfirmOpen(true);
+    };
+
+    const confirmSave = async () => {
 
         try {
-            // Updated to use the new authApi.updateProfile method which calls /api/auth/profile/update
             await authApi.updateProfile({
+                hoTen: profileData.name,
+                soDienThoai: profileData.phone,
                 maLop: profileData.className,
-                chuyenMon: profileData.faculty,
-                soDienThoai: profileData.phone
+                chuyenMon: profileData.faculty
             });
-            alert('Cập nhật hồ sơ thành công!');
+            toast.success('Cập nhật hồ sơ thành công!');
             setIsEditing(false);
             fetchProfile(); // Refresh data
         } catch (error) {
             console.error(error);
-            alert('Cập nhật thất bại.');
+            toast.error('Cập nhật thất bại.');
         }
     };
 
@@ -126,11 +140,11 @@ const Profile = () => {
 
     const submitChangePassword = async () => {
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            alert("Mật khẩu mới không khớp!");
+            toast.error("Mật khẩu mới không khớp!");
             return;
         }
         if (passwordData.newPassword.length < 6) {
-            alert("Mật khẩu mới phải có ít nhất 6 ký tự!");
+            toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
             return;
         }
 
@@ -139,22 +153,29 @@ const Profile = () => {
                 currentPassword: passwordData.currentPassword,
                 newPassword: passwordData.newPassword
             });
-            alert("Đổi mật khẩu thành công!");
+            toast.success("Đổi mật khẩu thành công!");
             setIsChangingPassword(false);
             setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || "Đổi mật khẩu thất bại.");
+            toast.error(error.response?.data?.message || "Đổi mật khẩu thất bại.");
         }
     };
 
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Hồ sơ cá nhân</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Hồ sơ cá nhân</span>
+                        <span className="indicator-text">{userRole === 'admin' ? 'Quản trị viên' : (userRole === 'cvht' ? 'Cố vấn' : 'Sinh viên')}</span>
                     </div>
                 </div>
             </header>
@@ -277,6 +298,40 @@ const Profile = () => {
                                         <div className="detail-content">
                                             <label>Lớp hành chính <Lock size={12} className="lock-icon" /></label>
                                             <p className="read-only-text">{profileData.className}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {userRole === 'cvht' && (
+                                    <div className="detail-item">
+                                        <div className="detail-icon">
+                                            <Users size={20} />
+                                        </div>
+                                        <div className="detail-content">
+                                            <label>Lớp phụ trách <Lock size={12} className="lock-icon" /></label>
+                                            <div className="managed-classes-tags">
+                                                {profileData.managedClasses && profileData.managedClasses.length > 0 ? (
+                                                    profileData.managedClasses.map((cls, idx) => (
+                                                        <span key={idx} className="class-tag">{cls}</span>
+                                                    ))
+                                                ) : (
+                                                    <p className="read-only-text">Chưa được phân công lớp nào</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {userRole === 'student' && (
+                                    <div className="detail-item">
+                                        <div className="detail-icon">
+                                            <User size={20} color="#059669" />
+                                        </div>
+                                        <div className="detail-content">
+                                            <label>Cố vấn học tập <Lock size={12} className="lock-icon" /></label>
+                                            <p className="read-only-text" style={{ color: '#059669', fontWeight: '600' }}>
+                                                {profileData.advisor}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -424,6 +479,16 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal 
+                isOpen={isSaveConfirmOpen}
+                onClose={() => setIsSaveConfirmOpen(false)}
+                onConfirm={confirmSave}
+                title="Xác nhận cập nhật"
+                message="Bạn có chắc chắn muốn cập nhật thông tin cá nhân không?"
+                confirmText="Cập nhật"
+                type="primary"
+            />
         </main>
     );
 };
