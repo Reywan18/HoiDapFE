@@ -4,6 +4,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Khai báo ARG để nhận biến môi trường lúc build Docker
+ARG VITE_API_BASE_URL
+# Đặt thành biến môi trường cho quá trình build của Vite
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Tạo bản build production vào thư mục /app/dist
 RUN npm run build
 
