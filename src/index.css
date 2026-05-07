@@ -42,6 +42,10 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 #root {
@@ -55,6 +59,10 @@ button {
   font-family: inherit;
 }
 
-input {
+input, textarea {
   font-family: inherit;
+  user-select: auto;
+  -webkit-user-select: auto;
+  -moz-user-select: auto;
+  -ms-user-select: auto;
 }

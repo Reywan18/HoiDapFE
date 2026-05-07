@@ -38,7 +38,8 @@ const QuestionList = () => {
 
             const response = await conversationApi.getStudentConversations(maSv, {
                 page: page,
-                size: 10
+                size: 10,
+                keyword: searchTerm
             });
 
             if (response.data && response.data.data) {

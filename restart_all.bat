@@ -13,11 +13,13 @@ echo.
 echo [2] Dang khoi dong Backend...
 echo     (Dang build file JAR, se mat khoang vai giay...)
 set BACKEND_DIR=%~dp0..\HoiDapApi\hoidapdemo
-if exist "%BACKEND_DIR%\target\hoidapdemo-0.0.1-SNAPSHOT.jar" (
-    cd /d "%BACKEND_DIR%"
+cd /d "%BACKEND_DIR%"
+call mvnw clean package -DskipTests
+
+if exist "target\hoidapdemo-0.0.1-SNAPSHOT.jar" (
     start "Backend Server" cmd /k "java -jar target\hoidapdemo-0.0.1-SNAPSHOT.jar"
 ) else (
-    echo [LOI] Khong tim thay file JAR. Hay build Backend truoc!
+    echo [LOI] Khong tim thay file JAR sau khi build!
     pause
     exit
 )

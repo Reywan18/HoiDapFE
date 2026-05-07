@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Users, Search, Plus, Edit2, Trash2, X, AlertCircle, ChevronLeft, ChevronRight, Menu
+    Users, Search, Plus, Edit2, Trash2, X, AlertCircle, ChevronLeft, ChevronRight, Menu, KeyRound
 } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -23,8 +23,12 @@ const StudentManagement = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState(null);
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [studentToReset, setStudentToReset] = useState(null);
     const [newAccountInfo, setNewAccountInfo] = useState(null); // To show generated password
+    const [resetPasswordInfo, setResetPasswordInfo] = useState(null);
     const [currentStudent, setCurrentStudent] = useState(null);
+    const [createMaSv, setCreateMaSv] = useState('');
 
     // Fetch data
     const fetchData = async () => {
@@ -145,6 +149,27 @@ const StudentManagement = () => {
         }
     };
 
+    // --- Reset Password ---
+    const triggerResetPassword = (maSv) => {
+        setStudentToReset(maSv);
+        setIsResetConfirmOpen(true);
+    };
+
+    const confirmResetPassword = async () => {
+        try {
+            const res = await api.post(`/admin/accounts/student/${studentToReset}/reset-password`);
+            if (res.data.status === 200) {
+                setResetPasswordInfo({ maSv: studentToReset, ...res.data.data });
+                toast.success('Đặt lại mật khẩu thành công!');
+            }
+        } catch (error) {
+            toast.error('Lỗi đặt lại mật khẩu: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsResetConfirmOpen(false);
+            setStudentToReset(null);
+        }
+    };
+
     // Filter
     // Note: Since we use Server-Side Pagination and Searching, 
     // the backend will handle filtering and we will directly use students buffer.
@@ -240,6 +265,13 @@ const StudentManagement = () => {
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
+                                                    onClick={(e) => { e.stopPropagation(); triggerResetPassword(sv.maSv); }}
+                                                    style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: '5px', marginLeft: '5px' }}
+                                                    title="Đặt lại mật khẩu"
+                                                >
+                                                    <KeyRound size={18} />
+                                                </button>
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); handleDelete(sv.maSv); }}
                                                     style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', padding: '5px', marginLeft: '10px' }}
                                                     title="Xóa"
@@ -254,7 +286,7 @@ const StudentManagement = () => {
                         </table>
                     )}
 
-                    {!loading && totalPages > 1 && (
+                    {!loading && (
                         <div className="pagination" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem' }}>
                             <button
                                 className="page-btn"
@@ -263,7 +295,7 @@ const StudentManagement = () => {
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {totalPages}</span>
+                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {Math.max(1, totalPages)}</span>
                             <button
                                 className="page-btn"
                                 disabled={currentPage >= totalPages - 1}
@@ -326,6 +358,31 @@ const StudentManagement = () => {
                                 </div>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Reset Password Info */}
+            {resetPasswordInfo && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '12px', width: '450px', maxWidth: '90%', padding: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ margin: 0, fontSize: '20px', color: '#1f2937' }}>Cấp Lại Mật Khẩu</h2>
+                            <button onClick={() => setResetPasswordInfo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '15px' }}>
+                            <h3 style={{ color: '#166534', margin: '0 0 15px 0', fontSize: '16px' }}>Đã đổi mật khẩu cho SV: {resetPasswordInfo.maSv}</h3>
+                            <div style={{ marginBottom: '10px' }}><strong>Email:</strong> {resetPasswordInfo.email}</div>
+                            <div style={{ marginBottom: '10px' }}><strong>Mật Khẩu Mới:</strong></div>
+                            <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
+                                {resetPasswordInfo.generatedPassword}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                                <button onClick={() => setResetPasswordInfo(null)} className="btn-primary">Hoàn tất</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -415,8 +472,17 @@ const StudentManagement = () => {
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
                 title="Xác nhận xóa"
-                message={`Bạn có chắc muốn xóa sinh viên ${studentToDelete}?`}
-                confirmText="Xóa sinh viên"
+                message={`Bạn có chắc chắn muốn xóa hệ thống tài khoản sinh viên ${studentToDelete}?`}
+                confirmText="Xóa tài khoản"
+            />
+
+            <ConfirmModal 
+                isOpen={isResetConfirmOpen}
+                onClose={() => setIsResetConfirmOpen(false)}
+                onConfirm={confirmResetPassword}
+                title="Xác nhận cấp lại mật khẩu"
+                message={`Bạn có chắc chắn muốn cấp lại mật khẩu cho sinh viên ${studentToReset}? Mật khẩu mới sẽ được sinh ngẫu nhiên và hiển thị trên màn hình.`}
+                confirmText="Cấp lại mật khẩu"
             />
         </main>
     );

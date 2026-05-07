@@ -237,7 +237,7 @@ const FAQManagement = () => {
                         </table>
                     )}
 
-                    {!loading && totalPages > 1 && (
+                    {!loading && (
                         <div className="pagination" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem' }}>
                             <button
                                 className="page-btn"
@@ -246,7 +246,7 @@ const FAQManagement = () => {
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {totalPages}</span>
+                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {Math.max(1, totalPages)}</span>
                             <button
                                 className="page-btn"
                                 disabled={currentPage >= totalPages - 1}

@@ -15,6 +15,7 @@ const NewQuestion = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [cvhtInfo, setCvhtInfo] = useState('');
+    const [errors, setErrors] = useState({});
 
     React.useEffect(() => {
         userApi.getProfile()
@@ -44,10 +45,17 @@ const NewQuestion = () => {
     };
 
     const handleSubmit = async () => {
-        if (!title.trim() || !content.trim()) {
-            toast.error('Vui lòng nhập đầy đủ tiêu đề và nội dung.');
+        const newErrors = {};
+        if (!title.trim()) newErrors.title = 'Vui lòng nhập chủ đề câu hỏi.';
+        if (!content.trim()) newErrors.content = 'Vui lòng nhập nội dung chi tiết.';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error('Vui lòng kiểm tra lại các trường bị thiếu.');
             return;
         }
+        
+        setErrors({});
 
         setLoading(true);
         try {
@@ -98,10 +106,15 @@ const NewQuestion = () => {
                             type="text"
                             id="title"
                             className="form-input"
+                            style={errors.title ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
                             placeholder="Nhập tiêu đề ngắn gọn cho câu hỏi..."
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                if (errors.title) setErrors({...errors, title: ''});
+                            }}
                         />
+                        {errors.title && <span style={{ color: '#ef4444', fontSize: '13px', marginTop: '4px', display: 'block' }}>{errors.title}</span>}
                     </div>
 
                     <div className="form-group">
@@ -141,11 +154,16 @@ const NewQuestion = () => {
                         <textarea
                             id="content"
                             className="form-textarea"
+                            style={errors.content ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
                             placeholder="Mô tả chi tiết thắc mắc của bạn..."
                             rows={8}
                             value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            onChange={(e) => {
+                                setContent(e.target.value);
+                                if (errors.content) setErrors({...errors, content: ''});
+                            }}
                         ></textarea>
+                        {errors.content && <span style={{ color: '#ef4444', fontSize: '13px', marginTop: '4px', display: 'block' }}>{errors.content}</span>}
                     </div>
 
                     <div className="form-group">

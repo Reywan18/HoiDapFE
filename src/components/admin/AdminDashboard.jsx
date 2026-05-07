@@ -92,27 +92,38 @@ const AdminDashboard = () => {
     ];
 
     return (
-        <div className="dashboard-container">
-            {/* Header Section */}
-            <header className="dashboard-header">
-                <div className="dashboard-title-area">
+        <main className="main-content">
+            <header className="top-bar">
+                <div className="top-bar-left">
                     <button className="mobile-toggle-btn" onClick={toggleSidebar}>
                         <Menu size={24} />
                     </button>
-                    <div className="dashboard-title">
-                        <h1>Báo Cáo Thống Kê Tổng Quan</h1>
-                        <p>Chào mừng Quản trị viên! Đây là dữ liệu vận hành hệ thống tính tới thời điểm hiện tại.</p>
+                </div>
+                <div className="top-bar-center">
+                    <span>Báo Cáo Thống Kê</span>
+                </div>
+                <div className="top-bar-right">
+                    <div className="user-indicator">
+                        <span className="indicator-text">Quản trị viên</span>
                     </div>
                 </div>
-                <button 
-                    onClick={exportPdf}
-                    className="btn-primary"
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontSize: '14px' }}
-                >
-                    <Download size={18} />
-                    Xuất Báo Cáo PDF
-                </button>
             </header>
+
+            <div className="content-container dashboard-container">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                        <h1 className="page-title" style={{ marginBottom: '0.5rem' }}>Báo Cáo Thống Kê Tổng Quan</h1>
+                        <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Chào mừng Quản trị viên! Đây là dữ liệu vận hành hệ thống tính tới thời điểm hiện tại.</p>
+                    </div>
+                    <button 
+                        onClick={exportPdf}
+                        className="btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontSize: '14px' }}
+                    >
+                        <Download size={18} />
+                        Xuất Báo Cáo PDF
+                    </button>
+                </div>
 
             {/* KPI Cards Section */}
             <div className="kpi-grid">
@@ -326,7 +337,8 @@ const AdminDashboard = () => {
                     </table>
                 </div>
             </div>
-        </div>
+            </div>
+        </main>
     );
 };
 

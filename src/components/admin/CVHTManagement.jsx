@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { User, Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, Menu, KeyRound } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
@@ -21,6 +21,8 @@ const CVHTManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [advisorToDelete, setAdvisorToDelete] = useState(null);
     const [createMaCv, setCreateMaCv] = useState('');
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [advisorToReset, setAdvisorToReset] = useState(null);
     const [newAccountInfo, setNewAccountInfo] = useState(null);
     const [currentAdvisor, setCurrentAdvisor] = useState(null);
 
@@ -128,6 +130,26 @@ const CVHTManagement = () => {
         }
     };
 
+    // --- Reset Password ---
+    const triggerResetPassword = (maCv) => {
+        setAdvisorToReset(maCv);
+        setIsResetConfirmOpen(true);
+    };
+
+    const confirmResetPassword = async () => {
+        try {
+            const res = await api.post(`/admin/accounts/cvht/${advisorToReset}/reset-password`);
+            if (res.data.status === 200) {
+                toast.success(`Đặt lại mật khẩu thành công cho ${advisorToReset}! Mật khẩu mới là 123456`);
+            }
+        } catch (error) {
+            toast.error('Lỗi đặt lại mật khẩu: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsResetConfirmOpen(false);
+            setAdvisorToReset(null);
+        }
+    };
+
     return (
         <main className="main-content">
             <header className="top-bar">
@@ -216,6 +238,13 @@ const CVHTManagement = () => {
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
+                                                    onClick={() => triggerResetPassword(cv.maCv)}
+                                                    style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: '5px', marginLeft: '5px' }}
+                                                    title="Đặt lại mật khẩu"
+                                                >
+                                                    <KeyRound size={18} />
+                                                </button>
+                                                <button
                                                     onClick={() => handleDelete(cv.maCv)}
                                                     style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', padding: '5px', marginLeft: '10px' }}
                                                     title="Xóa"
@@ -230,7 +259,7 @@ const CVHTManagement = () => {
                         </table>
                     )}
 
-                    {!loading && totalPages > 1 && (
+                    {!loading && (
                         <div className="pagination" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem' }}>
                             <button
                                 className="page-btn"
@@ -239,7 +268,7 @@ const CVHTManagement = () => {
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {totalPages}</span>
+                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {Math.max(1, totalPages)}</span>
                             <button
                                 className="page-btn"
                                 disabled={currentPage >= totalPages - 1}
@@ -338,10 +367,12 @@ const CVHTManagement = () => {
                                     onChange={(e) => setCurrentAdvisor({ ...currentAdvisor, chuyenMon: e.target.value })}
                                     style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', backgroundColor: '#fff' }}
                                 >
-                                    <option value="">-- Chọn Chuyên Môn --</option>
-                                    <option value="Học tập">Học tập</option>
-                                    <option value="Tài chính">Tài chính</option>
-                                    <option value="Kỷ luật">Kỷ luật</option>
+                                    <option value="">-- Chọn Ngành / Chuyên Môn --</option>
+                                    <option value="Công nghệ thông tin">Công nghệ thông tin</option>
+                                    <option value="Hệ thống thông tin">Hệ thống thông tin</option>
+                                    <option value="Khoa học máy tính">Khoa học máy tính</option>
+                                    <option value="Mạng máy tính và truyền thông dữ liệu">Mạng máy tính và truyền thông dữ liệu</option>
+                                    <option value="Trí tuệ nhân tạo">Trí tuệ nhân tạo</option>
                                     <option value="Khác">Khác</option>
                                 </select>
                             </div>
@@ -363,13 +394,22 @@ const CVHTManagement = () => {
                 </div>
             )}
 
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
                 title="Xác nhận xóa"
                 message={`Bạn có chắc chắn muốn xóa hệ thống tài khoản CVHT ${advisorToDelete}? Hành động này không thể hoàn tác.`}
                 confirmText="Xóa tài khoản"
+            />
+
+            <ConfirmModal
+                isOpen={isResetConfirmOpen}
+                onClose={() => setIsResetConfirmOpen(false)}
+                onConfirm={confirmResetPassword}
+                title="Xác nhận cấp lại mật khẩu"
+                message={`Bạn có chắc chắn muốn cấp lại mật khẩu cho CVHT ${advisorToReset}? Mật khẩu mới sẽ được đặt mặc định là 123456.`}
+                confirmText="Cấp lại mật khẩu"
             />
         </main>
     );

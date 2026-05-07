@@ -20,9 +20,11 @@ const QuestionDetail = () => {
     const [myId, setMyId] = useState(null);
     const [showInfo, setShowInfo] = useState(false);
     const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const messagesEndRef = useRef(null);
     const clientRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const role = localStorage.getItem('role') || 'student';
     const mySenderType = role === 'cvht' ? 'CVHT' : 'SINH_VIEN';
@@ -104,10 +106,30 @@ const QuestionDetail = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSend = () => {
-        if (!inputMessage.trim()) return;
+    const handleSend = async () => {
+        if (!inputMessage.trim() && !selectedFile) return;
 
-        if (clientRef.current && clientRef.current.connected) {
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('senderId', myId || (role === 'cvht' ? conversation?.maCv : conversation?.maSv) || "Unknown");
+            formData.append('senderType', mySenderType);
+            if (inputMessage.trim()) {
+                formData.append('content', inputMessage);
+            }
+
+            try {
+                toast.loading("Đang gửi tin nhắn đính kèm...", { id: 'uploadFile' });
+                await conversationApi.uploadFile(questionId, formData);
+                toast.success("Đã gửi thành công", { id: 'uploadFile' });
+                setInputMessage('');
+                setSelectedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+            } catch (error) {
+                console.error('Lỗi upload:', error);
+                toast.error("Lỗi khi gửi tệp", { id: 'uploadFile' });
+            }
+        } else if (clientRef.current && clientRef.current.connected) {
             const payload = {
                 conversationId: questionId,
                 senderId: myId || (role === 'cvht' ? conversation?.maCv : conversation?.maSv) || "Unknown",
@@ -133,8 +155,33 @@ const QuestionDetail = () => {
         setTimeout(() => setCopyStatus(prev => ({ ...prev, [type]: false })), 2000);
     };
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) setSelectedFile(file);
+    };
+
     const handleResolve = async () => {
         setIsResolveModalOpen(true);
+    };
+
+    const handleDownload = async (messageId, fileName) => {
+        try {
+            toast.loading("Đang chuẩn bị tệp...", { id: `download-${messageId}` });
+            const response = await conversationApi.downloadFile(messageId);
+            const blob = new Blob([response.data], { type: response.headers['content-type'] });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success("Đã tải xuống", { id: `download-${messageId}` });
+        } catch (error) {
+            console.error("Lỗi khi tải tệp:", error);
+            toast.error("Không thể tải tệp", { id: `download-${messageId}` });
+        }
     };
 
     const confirmResolve = async () => {
@@ -310,7 +357,23 @@ const QuestionDetail = () => {
                             return (
                                 <div key={index} className={`message-bubble ${isMe ? 'message-mine' : 'message-yours'}`}>
                                     <div className="message-content">
-                                        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.noiDung}</p>
+                                        {msg.fileName ? (
+                                            <div>
+                                                <p style={{ whiteSpace: 'pre-wrap', margin: 0, marginBottom: '8px' }}>{msg.noiDung}</p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)', borderRadius: '8px', marginBottom: '4px' }}>
+                                                    <Paperclip size={16} />
+                                                    <span style={{ fontSize: '14px', fontWeight: '500', wordBreak: 'break-all' }}>{msg.fileName}</span>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleDownload(msg.id, msg.fileName)}
+                                                    style={{ background: 'none', border: 'none', color: isMe ? '#fff' : '#0369a1', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', padding: 0 }}
+                                                >
+                                                    Tải tệp về
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.noiDung}</p>
+                                        )}
                                         <div className="message-time">{formatTime(msg.thoiGianGui)}</div>
                                     </div>
                                 </div>
@@ -319,25 +382,48 @@ const QuestionDetail = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    <div className={`chat-input-area ${isReadOnly ? 'disabled-chat' : ''}`}>
-                        <button className="btn-icon" title="Đính kèm tệp" disabled={isReadOnly}>
-                            <Paperclip size={20} />
-                        </button>
-                        <input
-                            type="text"
-                            className="chat-input"
-                            placeholder={
-                                role === 'admin' ? "Quản trị viên chỉ có quyền xem ẩn danh." :
-                                isResolved ? "Cuộc trò chuyện này đã kết thúc." : "Nhập tin nhắn..."
-                            }
-                            value={inputMessage}
-                            onChange={(e) => setInputMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            disabled={isReadOnly}
-                        />
-                        <button className="btn-send-chat" onClick={handleSend} disabled={!inputMessage.trim() || isReadOnly}>
-                            <Send size={20} />
-                        </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid #e5e7eb', background: '#fff' }}>
+                        {selectedFile && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
+                                <Paperclip size={16} color="#64748b" />
+                                <span style={{ fontSize: '14px', color: '#334155', fontWeight: '500', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {selectedFile.name}
+                                </span>
+                                <button 
+                                    onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                                    style={{ background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', fontSize: '12px' }}
+                                    title="Xóa tệp đính kèm"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+                        <div className={`chat-input-area ${isReadOnly ? 'disabled-chat' : ''}`} style={{ borderTop: 'none' }}>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                style={{ display: 'none' }} 
+                                onChange={handleFileUpload}
+                            />
+                            <button className="btn-icon" title="Đính kèm tệp" disabled={isReadOnly} onClick={() => fileInputRef.current?.click()}>
+                                <Paperclip size={20} />
+                            </button>
+                            <input
+                                type="text"
+                                className="chat-input"
+                                placeholder={
+                                    role === 'admin' ? "Quản trị viên chỉ có quyền xem ẩn danh." :
+                                    isResolved ? "Cuộc trò chuyện này đã kết thúc." : "Nhập tin nhắn..."
+                                }
+                                value={inputMessage}
+                                onChange={(e) => setInputMessage(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                disabled={isReadOnly}
+                            />
+                            <button className="btn-send-chat" onClick={handleSend} disabled={(!inputMessage.trim() && !selectedFile) || isReadOnly}>
+                                <Send size={20} />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -368,10 +454,12 @@ const QuestionDetail = () => {
 
                     <div className="info-footer">
                         <div className="action-buttons">
-                            <button className="btn-action-outline btn-report" onClick={handleReport}>
-                                <AlertTriangle size={16} />
-                                <span>Báo cáo</span>
-                            </button>
+                            {role === 'cvht' && (
+                                <button className="btn-action-outline btn-report" onClick={handleReport}>
+                                    <AlertTriangle size={16} />
+                                    <span>Báo cáo</span>
+                                </button>
+                            )}
                             
                             {role === 'cvht' && !isResolved && (
                                 <button className="btn-action-solid btn-complete" onClick={handleResolve}>
