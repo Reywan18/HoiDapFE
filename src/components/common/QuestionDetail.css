@@ -397,3 +397,86 @@
     margin-bottom: auto;
     font-style: italic;
 }
+
+/* Mobile Adjustments */
+.info-toggle-btn {
+    display: none;
+    background: white;
+    border: 1px solid #e2e8f0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #64748b;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.mobile-info-close {
+    display: none;
+    padding: 1rem;
+    justify-content: flex-end;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mobile-info-close button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #64748b;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .participant-info-sidebar {
+        position: fixed;
+        right: -320px;
+        top: 0;
+        bottom: 0;
+        transition: right 0.3s ease;
+    }
+
+    .participant-info-sidebar.show-mobile {
+        right: 0;
+    }
+
+    .info-toggle-btn {
+        display: flex;
+    }
+
+    .mobile-info-close {
+        display: flex;
+    }
+
+    .top-bar-center {
+        position: static;
+        transform: none;
+        flex: 1;
+        margin-left: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .messages-area {
+        padding: 1rem;
+    }
+
+    .message-bubble {
+        max-width: 90%;
+    }
+
+    .chat-input-area {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-badge span {
+        display: none;
+    }
+
+    .status-badge {
+        padding: 0.4rem;
+    }
+}

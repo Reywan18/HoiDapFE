@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { BarChart, PieChart, Calendar, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart, PieChart, Calendar, Download, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import './CVHTDashboard.css';
 import api from '../../services/api';
 
 const CVHTReports = () => {
+    const { toggleSidebar } = useOutletContext();
     const [stats, setStats] = useState({
         totalQuestions: 0,
         totalAnswered: 0,
@@ -38,7 +41,7 @@ const CVHTReports = () => {
             link.remove();
         } catch (error) {
             console.error("Export failed", error);
-            alert("Xuất báo cáo thất bại.");
+            toast.error("Xuất báo cáo thất bại.");
         } finally {
             setIsExporting(false);
         }
@@ -50,10 +53,17 @@ const CVHTReports = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Báo cáo thống kê</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Báo cáo thống kê</span>
+                        <span className="indicator-text">Cố vấn</span>
                     </div>
                 </div>
             </header>

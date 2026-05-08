@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Send, CheckCircle, AlertCircle, Search } from 'lucide-react';
+import { Upload, FileText, Send, CheckCircle, AlertCircle, Search, Menu } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import api from '../../services/api';
 import '../common/QuestionList.css';
 
 const AiTraining = () => {
+    const { toggleSidebar } = useOutletContext();
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadStatus, setUploadStatus] = useState({ type: '', message: '' });
@@ -75,7 +77,11 @@ const AiTraining = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
                         <span className="indicator-text">Huấn luyện AI</span>

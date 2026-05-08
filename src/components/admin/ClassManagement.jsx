@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    BookOpen, Search, Plus, Edit2, Trash2,
-    Upload, Download, X, AlertCircle, ChevronLeft, ChevronRight
+    Upload, Download, X, AlertCircle, ChevronLeft, ChevronRight, Menu, Search, Plus, Trash2, Edit2
 } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import api from '../../services/api';
+import ConfirmModal from '../common/ConfirmModal';
 
 const ClassManagement = () => {
+    const { toggleSidebar } = useOutletContext();
     const [classes, setClasses] = useState([]);
     const [advisors, setAdvisors] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,6 +20,8 @@ const ClassManagement = () => {
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [classToDelete, setClassToDelete] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentClass, setCurrentClass] = useState({
         maLop: '',
@@ -31,31 +36,34 @@ const ClassManagement = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [classesRes, advisorsRes] = await Promise.all([
-                api.get('/admin/classes', {
-                    params: {
-                        page: currentPage,
-                        size: itemsPerPage,
-                        keyword: searchTerm
-                    }
-                }),
-                api.get('/admin/users/cvht') // Fetch CVHT list for dropdown
-            ]);
-
-            console.log("classesRes:", classesRes.data);
-            console.log("advisorsRes:", advisorsRes.data);
-
+            const classesRes = await api.get('/admin/classes', {
+                params: {
+                    page: currentPage,
+                    size: itemsPerPage,
+                    keyword: searchTerm
+                }
+            });
             if (classesRes.data.status === 200) {
-                setClasses(classesRes.data.data?.content || classesRes.data.data || []);
-                setTotalPages(classesRes.data.data?.totalPages || 0);
-            }
-            if (advisorsRes.data.status === 200) {
-                setAdvisors(advisorsRes.data.data);
+                const data = classesRes.data.data;
+                setClasses(data?.content || (Array.isArray(data) ? data : []));
+                setTotalPages(data?.totalPages || 0);
             }
         } catch (error) {
             console.error('Lỗi khi lấy dữ liệu lớp:', error.response?.data || error);
         } finally {
             setLoading(false);
+        }
+
+        // Tải danh sách CVHT riêng (không crash nếu lỗi)
+        try {
+            const advisorsRes = await api.get('/admin/users/cvht');
+            if (advisorsRes.data.status === 200) {
+                const advData = advisorsRes.data.data;
+                setAdvisors(advData?.content || (Array.isArray(advData) ? advData : []));
+            }
+        } catch (error) {
+            console.warn('Không tải được danh sách CVHT:', error.response?.status);
+            setAdvisors([]);
         }
     };
 
@@ -100,21 +108,26 @@ const ClassManagement = () => {
             } else {
                 await api.post('/admin/classes', currentClass);
             }
+            toast.success(isEditMode ? 'Cập nhật lớp thành công!' : 'Thêm lớp mới thành công!');
             fetchData();
             closeModal();
         } catch (error) {
-            alert('Lỗi: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi: ' + (error.response?.data?.message || error.message));
         }
     };
 
-    const handleDelete = async (maLop) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa lớp ${maLop}?`)) {
-            try {
-                await api.delete(`/admin/classes/${maLop}`);
-                fetchData();
-            } catch (error) {
-                alert('Lỗi khi xóa lớp. Đảm bảo lớp không có sinh viên trước khi xóa.');
-            }
+    const handleDelete = (maLop) => {
+        setClassToDelete(maLop);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await api.delete(`/admin/classes/${classToDelete}`);
+            toast.success(`Đã xóa lớp ${classToDelete} thành công!`);
+            fetchData();
+        } catch (error) {
+            toast.error('Lỗi khi xóa lớp. Đảm bảo lớp không có sinh viên trước khi xóa.');
         }
     };
 
@@ -129,10 +142,10 @@ const ClassManagement = () => {
             await api.post('/admin/classes/import', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert('Nhập dữ liệu thành công!');
+            toast.success('Nhập dữ liệu thành công!');
             fetchData();
         } catch (error) {
-            alert('Lỗi import: ' + (error.response?.data?.message || 'Kiểm tra lại định dạng file Excel (.xlsx)'));
+            toast.error('Lỗi import: ' + (error.response?.data?.message || 'Kiểm tra lại định dạng file Excel (.xlsx)'));
         }
         e.target.value = null; // Reset input
     };
@@ -151,9 +164,10 @@ const ClassManagement = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+            toast.success('Đã xuất file thành công!');
         } catch (error) {
             console.error('Lỗi khi xuất excel:', error);
-            alert('Lỗi xuất file Excel!');
+            toast.error('Lỗi xuất file Excel!');
         }
     };
 
@@ -165,10 +179,17 @@ const ClassManagement = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Quản lý Lớp học</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Quản Lý Lớp Học</span>
+                        <span className="indicator-text">Quản trị viên</span>
                     </div>
                 </div>
             </header>
@@ -284,7 +305,7 @@ const ClassManagement = () => {
                         </table>
                     )}
                     
-                    {!loading && totalPages > 1 && (
+                    {!loading && (
                         <div className="pagination" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem' }}>
                             <button
                                 className="page-btn"
@@ -293,7 +314,7 @@ const ClassManagement = () => {
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {totalPages}</span>
+                            <span style={{ fontSize: '14px', alignSelf: 'center' }}>Trang {currentPage + 1} / {Math.max(1, totalPages)}</span>
                             <button
                                 className="page-btn"
                                 disabled={currentPage >= totalPages - 1}
@@ -337,25 +358,34 @@ const ClassManagement = () => {
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>Chuyên Ngành *</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         required
-                                        placeholder="Hệ thống thông tin..."
                                         value={currentClass.chuyenNganh}
                                         onChange={(e) => setCurrentClass({ ...currentClass, chuyenNganh: e.target.value })}
-                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none' }}
-                                    />
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', backgroundColor: '#fff' }}
+                                    >
+                                        <option value="">-- Chọn Chuyên Ngành --</option>
+                                        <option value="Công nghệ thông tin">Công nghệ thông tin</option>
+                                        <option value="Hệ thống thông tin">Hệ thống thông tin</option>
+                                        <option value="Khoa học máy tính">Khoa học máy tính</option>
+                                        <option value="Trí tuệ nhân tạo">Trí tuệ nhân tạo</option>
+                                    </select>
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>Khóa Học *</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         required
-                                        placeholder="VD: K34"
                                         value={currentClass.khoaHoc}
                                         onChange={(e) => setCurrentClass({ ...currentClass, khoaHoc: e.target.value })}
-                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none' }}
-                                    />
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', backgroundColor: '#fff' }}
+                                    >
+                                        <option value="">-- Chọn Khóa --</option>
+                                        <option value="K33">K33</option>
+                                        <option value="K34">K34</option>
+                                        <option value="K35">K35</option>
+                                        <option value="K36">K36</option>
+                                        <option value="K37">K37</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -394,6 +424,15 @@ const ClassManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Xác nhận xóa"
+                message={`Bạn có chắc chắn muốn xóa lớp ${classToDelete}?`}
+                confirmText="Xóa lớp"
+            />
         </main>
     );
 };

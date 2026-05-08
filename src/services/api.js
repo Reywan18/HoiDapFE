@@ -78,6 +78,10 @@ export const conversationApi = {
     getMessages: (conversationId) => api.get(`/conversations/${conversationId}/messages`),
     getConversationDetail: (id) => api.get(`/conversations/${id}`),
     resolveConversation: (id) => api.put(`/conversations/${id}/resolve`),
+    uploadFile: (id, formData) => api.post(`/conversations/${id}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    downloadFile: (messageId) => api.get(`/conversations/messages/${messageId}/download`, { responseType: 'blob' }),
 };
 
 // Admin APIs (Using 8081)

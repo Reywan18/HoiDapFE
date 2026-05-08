@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import api, { userApi, conversationApi } from '../../services/api';
-import { Send, Paperclip, X } from 'lucide-react';
+import { Send, Paperclip, X, Menu } from 'lucide-react';
+import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import './NewQuestion.css';
 
 const NewQuestion = () => {
+    const { toggleSidebar } = useOutletContext();
     const navigate = useNavigate();
     const [title, setTitle] = useState('');
     const [department, setDepartment] = useState('HOCTAP');
@@ -13,6 +15,7 @@ const NewQuestion = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [cvhtInfo, setCvhtInfo] = useState('');
+    const [errors, setErrors] = useState({});
 
     React.useEffect(() => {
         userApi.getProfile()
@@ -25,7 +28,7 @@ const NewQuestion = () => {
                     } else if (u.tenCoVan) {
                         setCvhtInfo(u.tenCoVan);
                     } else {
-                        setCvhtInfo('Chưa có Cố vấn học tập');
+                        setCvhtInfo('⚠️ Chưa được phân công Cố vấn');
                     }
                 }
             })
@@ -42,10 +45,17 @@ const NewQuestion = () => {
     };
 
     const handleSubmit = async () => {
-        if (!title.trim() || !content.trim()) {
-            alert('Vui lòng nhập đầy đủ tiêu đề và nội dung.');
+        const newErrors = {};
+        if (!title.trim()) newErrors.title = 'Vui lòng nhập chủ đề câu hỏi.';
+        if (!content.trim()) newErrors.content = 'Vui lòng nhập nội dung chi tiết.';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error('Vui lòng kiểm tra lại các trường bị thiếu.');
             return;
         }
+        
+        setErrors({});
 
         setLoading(true);
         try {
@@ -57,13 +67,12 @@ const NewQuestion = () => {
             const response = await conversationApi.createConversation(requestData);
 
             if (response.data && response.data.status === 200) {
-                navigate(`/sinhvien/question-detail/${response.data.data.id}`, {
-                    state: { title: title }
-                });
+                toast.success('Gửi câu hỏi thành công! Đang chuyển đến danh sách...');
+                setTimeout(() => navigate('/sinhvien/my-question'), 1500);
             }
         } catch (error) {
             console.error('Lỗi khi gửi:', error);
-            alert('Gửi thất bại. Vui lòng thử lại.');
+            toast.error('Gửi thất bại. Vui lòng thử lại.');
         } finally {
             setLoading(false);
         }
@@ -72,10 +81,17 @@ const NewQuestion = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Tạo câu hỏi mới</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Tạo câu hỏi mới</span>
+                        <span className="indicator-text">Sinh viên</span>
                     </div>
                 </div>
             </header>
@@ -90,10 +106,15 @@ const NewQuestion = () => {
                             type="text"
                             id="title"
                             className="form-input"
+                            style={errors.title ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
                             placeholder="Nhập tiêu đề ngắn gọn cho câu hỏi..."
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                if (errors.title) setErrors({...errors, title: ''});
+                            }}
                         />
+                        {errors.title && <span style={{ color: '#ef4444', fontSize: '13px', marginTop: '4px', display: 'block' }}>{errors.title}</span>}
                     </div>
 
                     <div className="form-group">
@@ -119,7 +140,12 @@ const NewQuestion = () => {
                             value={cvhtInfo}
                             readOnly
                             disabled
-                            style={{ backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: 600 }} // Lighter gray
+                            style={{ 
+                                backgroundColor: cvhtInfo.includes('⚠️') ? '#fff1f2' : '#f8fafc', 
+                                color: cvhtInfo.includes('⚠️') ? '#e11d48' : '#334155', 
+                                fontWeight: 600,
+                                border: cvhtInfo.includes('⚠️') ? '1px solid #fecdd3' : '1px solid #e2e8f0'
+                            }}
                         />
                     </div>
 
@@ -128,11 +154,16 @@ const NewQuestion = () => {
                         <textarea
                             id="content"
                             className="form-textarea"
+                            style={errors.content ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
                             placeholder="Mô tả chi tiết thắc mắc của bạn..."
                             rows={8}
                             value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            onChange={(e) => {
+                                setContent(e.target.value);
+                                if (errors.content) setErrors({...errors, content: ''});
+                            }}
                         ></textarea>
+                        {errors.content && <span style={{ color: '#ef4444', fontSize: '13px', marginTop: '4px', display: 'block' }}>{errors.content}</span>}
                     </div>
 
                     <div className="form-group">

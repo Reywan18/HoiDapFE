@@ -27,6 +27,10 @@
     font-weight: 600;
     font-size: 1.1rem;
     color: #fff;
+    white-space: nowrap;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .top-bar-right {
@@ -254,4 +258,73 @@
 .page-btn:hover {
     background-color: #f1f5f9;
     color: var(--text-main);
+}
+
+/* Responsive QuestionList */
+@media (max-width: 768px) {
+    .top-bar {
+        padding: 0 1rem;
+    }
+
+    .top-bar-center {
+        font-size: 0.95rem;
+        max-width: 150px;
+    }
+
+    .content-container {
+        padding: 1rem;
+    }
+
+    .controls-area {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .search-input-wrapper {
+        width: 100% !important;
+    }
+
+    .btn-primary {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .table-card {
+        margin: 0;
+        border-radius: 8px;
+        box-shadow: none;
+        border: 1px solid #e2e8f0;
+    }
+
+    .questions-table {
+        min-width: 500px; /* Reduced min-width to avoid excessive scrolling */
+    }
+
+    .questions-table th, .questions-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .subject-cell {
+        min-width: 150px;
+    }
+
+    .pagination {
+        justify-content: center;
+        padding: 1rem 0;
+    }
+
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* Fix for empty table display */
+.questions-table tbody tr td[colspan] {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #94a3b8;
+    font-style: italic;
 }

@@ -297,3 +297,20 @@
 .font-mono {
     font-family: 'Courier New', Courier, monospace;
 }
+
+.managed-classes-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.class-tag {
+    background-color: #fef2f2;
+    color: var(--primary);
+    border: 1px solid #fee2e2;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, User, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, User, Clock, Menu } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import '../common/QuestionList.css';
 import './CVHTQuestions.css';
 import { userApi, conversationApi } from '../../services/api';
 
 const PendingQuestions = () => {
+    const { toggleSidebar } = useOutletContext();
     const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -84,10 +85,17 @@ const PendingQuestions = () => {
     return (
         <main className="main-content">
             <header className="top-bar">
-                <div className="top-bar-left"></div>
+                <div className="top-bar-left">
+                    <button className="mobile-toggle-btn" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className="top-bar-center">
+                    <span>Phòng chat hỗ trợ</span>
+                </div>
                 <div className="top-bar-right">
                     <div className="user-indicator">
-                        <span className="indicator-text">Phòng Chat Hỗ Trợ</span>
+                        <span className="indicator-text">Cố vấn</span>
                     </div>
                 </div>
             </header>
