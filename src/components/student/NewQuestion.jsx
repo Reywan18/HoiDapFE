@@ -59,12 +59,14 @@ const NewQuestion = () => {
 
         setLoading(true);
         try {
-            const requestData = {
-                tieuDe: title,
-                noiDung: content
-            };
+            const formData = new FormData();
+            formData.append('tieuDe', title);
+            formData.append('noiDung', content);
+            if (selectedFile) {
+                formData.append('file', selectedFile);
+            }
 
-            const response = await conversationApi.createConversation(requestData);
+            const response = await conversationApi.createConversation(formData);
 
             if (response.data && response.data.status === 200) {
                 toast.success('Gửi câu hỏi thành công! Đang chuyển đến danh sách...');
@@ -168,7 +170,7 @@ const NewQuestion = () => {
 
                     <div className="form-group">
                         <label>Đính kèm tệp</label>
-                        <div className="file-upload-area">
+                        <div className="file-upload-area" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                             <input
                                 type="file"
                                 id="file-upload"
@@ -176,13 +178,33 @@ const NewQuestion = () => {
                                 onChange={handleFileChange}
                                 hidden
                             />
-                            <label htmlFor="file-upload" className="file-label">
+                            <label htmlFor="file-upload" className="file-label" style={{ margin: 0 }}>
                                 <Paperclip size={18} />
                                 <span>{selectedFile ? selectedFile.name : 'Chọn tệp tin (Hình ảnh, PDF, Word...)'}</span>
                             </label>
+                            
                             {selectedFile && (
-                                <button onClick={() => setSelectedFile(null)} style={{ marginLeft: '10px', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                    <X size={16} color="red" />
+                                <button 
+                                    className="remove-file-btn"
+                                    onClick={() => setSelectedFile(null)} 
+                                    title="Hủy chọn tệp"
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        width: '28px', 
+                                        height: '28px', 
+                                        borderRadius: '50%', 
+                                        border: '1px solid #e2e8f0',
+                                        background: '#f8fafc',
+                                        color: '#64748b',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fecdd3'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                                >
+                                    <X size={16} />
                                 </button>
                             )}
                             <span className="file-help">Tối đa 10MB</span>

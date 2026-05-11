@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Paperclip, User, Mail, Phone, MapPin, Copy, Check, BookOpen, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { conversationApi, userApi } from '../../services/api';
+import { conversationApi, userApi, reportIssueApi } from '../../services/api';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import toast from 'react-hot-toast';
@@ -21,6 +21,9 @@ const QuestionDetail = () => {
     const [showInfo, setShowInfo] = useState(false);
     const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportCustomText, setReportCustomText] = useState('');
 
     const messagesEndRef = useRef(null);
     const clientRef = useRef(null);
@@ -189,7 +192,12 @@ const QuestionDetail = () => {
             const res = await conversationApi.resolveConversation(questionId);
             if (res.data && res.data.status === 200) {
                 toast.success("Đã hoàn thành câu hỏi!");
-                fetchConversationDetail(); 
+                setIsResolveModalOpen(false);
+                if (role === 'cvht') {
+                    navigate('/cvht/pending');
+                } else {
+                    fetchConversationDetail(); 
+                }
             }
         } catch (error) {
             console.error('Lỗi khi hoàn thành câu hỏi:', error);
@@ -198,7 +206,25 @@ const QuestionDetail = () => {
     };
 
     const handleReport = () => {
-        toast.success("Đã ghi nhận báo cáo. Cảm ơn bạn đã phản hồi!");
+        setReportReason('');
+        setReportCustomText('');
+        setIsReportModalOpen(true);
+    };
+
+    const handleSubmitReport = async () => {
+        const finalReason = reportReason === 'Khác' ? reportCustomText : reportReason;
+        if (!finalReason.trim()) {
+            toast.error('Vui lòng chọn lý do báo cáo!');
+            return;
+        }
+        try {
+            await reportIssueApi.submitReport(questionId, finalReason);
+            toast.success('Đã gửi báo cáo thành công! Admin sẽ xem xét sớm.');
+            setIsReportModalOpen(false);
+            fetchConversationDetail(); // Cập nhật lại trạng thái conversation
+        } catch (err) {
+            toast.error('Không thể gửi báo cáo: ' + (err.response?.data?.message || err.message));
+        }
     };
 
     const formatTime = (isoString) => {
@@ -210,7 +236,8 @@ const QuestionDetail = () => {
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải lịch sử trò chuyện...</div>;
 
     const isResolved = conversation?.trangThai === 'RESOLVED';
-    const isReadOnly = isResolved || role === 'admin';
+    const isReported = conversation?.trangThai === 'REPORTED';
+    const isReadOnly = isResolved || isReported || role === 'admin';
 
     // Determine whose info to show
     const isUserStudent = role === 'student';
@@ -339,8 +366,8 @@ const QuestionDetail = () => {
                     <button className="info-toggle-btn" onClick={() => setShowInfo(!showInfo)}>
                         <User size={20} />
                     </button>
-                    <span className={`status-badge ${isResolved ? 'status-resolved' : 'status-online'}`}>
-                        {isResolved ? "Đã giải quyết" : "Đang hoạt động"}
+                    <span className={`status-badge ${isResolved ? 'status-resolved' : isReported ? 'status-reported' : 'status-online'}`}>
+                        {isResolved ? "Đã giải quyết" : isReported ? "Bị báo cáo" : "Đang hoạt động"}
                     </span>
                 </div>
             </header>
@@ -454,11 +481,17 @@ const QuestionDetail = () => {
 
                     <div className="info-footer">
                         <div className="action-buttons">
-                            {role === 'cvht' && (
+                            {role === 'cvht' && !isReported && !isResolved && (
                                 <button className="btn-action-outline btn-report" onClick={handleReport}>
                                     <AlertTriangle size={16} />
                                     <span>Báo cáo</span>
                                 </button>
+                            )}
+                            {isReported && (
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', background: '#fef2f2', color: '#dc2626', fontSize: '14px', fontWeight: '500', border: '1px solid #fecaca' }}>
+                                    <AlertTriangle size={14} />
+                                    <span>Đã báo cáo vi phạm</span>
+                                </div>
                             )}
                             
                             {role === 'cvht' && !isResolved && (
@@ -487,6 +520,55 @@ const QuestionDetail = () => {
                     confirmText="Hoàn thành"
                     type="primary"
                 />
+
+                {/* Report Modal */}
+                {isReportModalOpen && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ backgroundColor: '#fff', borderRadius: '12px', width: '480px', maxWidth: '95%', padding: '28px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ background: '#fef2f2', borderRadius: '8px', padding: '8px', display: 'flex' }}>
+                                        <AlertTriangle size={20} color="#dc2626" />
+                                    </div>
+                                    <h2 style={{ margin: 0, fontSize: '18px', color: '#1f2937', fontWeight: '600' }}>Báo cáo vi phạm</h2>
+                                </div>
+                                <button onClick={() => setIsReportModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: '20px', lineHeight: 1 }}>×</button>
+                            </div>
+                            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px' }}>Vui lòng chọn lý do báo cáo để Admin có thể xem xét và xử lý kịp thời.</p>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                                {['Nội dung không phù hợp', 'Sinh viên không hợp tác', 'Câu hỏi sai lĩnh vực', 'Ngôn từ thiếu văn minh', 'Khác'].map((reason) => (
+                                    <label key={reason} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', border: `2px solid ${reportReason === reason ? '#dc2626' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: reportReason === reason ? '#fef2f2' : '#fff', transition: 'all 0.15s' }}>
+                                        <input
+                                            type="radio"
+                                            name="reportReason"
+                                            value={reason}
+                                            checked={reportReason === reason}
+                                            onChange={() => setReportReason(reason)}
+                                            style={{ accentColor: '#dc2626', width: '16px', height: '16px' }}
+                                        />
+                                        <span style={{ fontSize: '14px', color: '#374151', fontWeight: reportReason === reason ? '500' : '400' }}>{reason}</span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {reportReason === 'Khác' && (
+                                <textarea
+                                    placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
+                                    value={reportCustomText}
+                                    onChange={(e) => setReportCustomText(e.target.value)}
+                                    rows={3}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', fontSize: '14px', resize: 'vertical', fontFamily: 'inherit', marginBottom: '16px', boxSizing: 'border-box' }}
+                                />
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '20px' }}>
+                                <button onClick={() => setIsReportModalOpen(false)} style={{ padding: '8px 20px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontSize: '14px', color: '#374151' }}>Hủy bỏ</button>
+                                <button onClick={handleSubmitReport} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Gửi báo cáo</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </main>
     );

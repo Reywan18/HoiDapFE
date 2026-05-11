@@ -72,9 +72,12 @@ export const questionApi = {
 
 // Chat / Conversation APIs (Using 8081)
 export const conversationApi = {
-    createConversation: (data) => api.post('/conversations', data),
+    createConversation: (formData) => api.post('/conversations', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
     getStudentConversations: (maSv, params) => api.get(`/conversations/student/${maSv}`, { params }),
     getCvhtConversations: (maCv, params) => api.get(`/conversations/cvht/${maCv}`, { params }),
+    getAdvisorClasses: (maCv) => api.get(`/conversations/cvht/${maCv}/classes`),
     getMessages: (conversationId) => api.get(`/conversations/${conversationId}/messages`),
     getConversationDetail: (id) => api.get(`/conversations/${id}`),
     resolveConversation: (id) => api.put(`/conversations/${id}/resolve`),
@@ -106,6 +109,20 @@ export const faqApi = {
 // AI Chatbot APIs
 export const aiApi = {
     chat: (message) => api.post('/ai/chat', { message })
+};
+
+// Report Issue APIs
+export const reportIssueApi = {
+    submitReport: (conversationId, reason) => api.post('/issues/report', { conversationId, reason }),
+    getAll: () => api.get('/admin/issues'),
+    resolve: (id) => api.put(`/admin/issues/${id}/resolve`),
+};
+
+// Statistical Report APIs
+export const reportApi = {
+    getDashboard: () => api.get('/reports/dashboard'),
+    getAdvisorDashboard: (maCv) => api.get(`/reports/cvht/${maCv}`),
+    exportPdf: () => api.get('/reports/export/pdf', { responseType: 'blob' }),
 };
 
 export default api;

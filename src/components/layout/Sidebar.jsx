@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2, Bot, X as CloseIcon, Menu } from 'lucide-react';
+import { MessageSquare, PlusCircle, BookOpen, User, LogOut, FileText, BarChart2, Bot, X as CloseIcon, Menu, AlertTriangle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ConfirmModal from '../common/ConfirmModal';
 import './Sidebar.css';
@@ -63,6 +63,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             { id: 'questions', to: '/admin/questions', icon: FileText, label: 'Quản lý Câu hỏi' },
             { id: 'faqs', to: '/admin/faqs', icon: BookOpen, label: 'Quản lý FAQ' },
             { id: 'ai-training', to: '/admin/ai-training', icon: Bot, label: 'Huấn luyện AI' },
+            { id: 'reports', to: '/admin/reports', icon: AlertTriangle, label: 'Báo cáo vi phạm' },
         ];
     } else if (role === 'cvht') {
         navItems = [

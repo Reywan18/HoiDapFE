@@ -210,6 +210,20 @@
     background: #f1f5f9;
 }
 
+.status-reported {
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+.status-reported::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #dc2626;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
 /* Action Buttons in Footer */
 .action-buttons {
     display: flex;

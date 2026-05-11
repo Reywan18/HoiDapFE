@@ -65,6 +65,7 @@ const QuestionList = () => {
             case 'WAITING_FOR_CVHT': return 'pending';
             case 'CHATTING_WITH_CVHT': return 'processing';
             case 'CHATTING_WITH_BOT': return 'processing';
+            case 'REPORTED': return 'reported';
             case 'RESOLVED': return 'completed';
             default: return '';
         }
@@ -75,6 +76,7 @@ const QuestionList = () => {
             case 'WAITING_FOR_CVHT': return 'Chờ phản hồi';
             case 'CHATTING_WITH_CVHT': return 'Đang trực tiếp';
             case 'CHATTING_WITH_BOT': return 'Với trợ lý ảo';
+            case 'REPORTED': return 'Bị báo cáo';
             case 'RESOLVED': return 'Đã giải quyết';
             default: return status;
         }

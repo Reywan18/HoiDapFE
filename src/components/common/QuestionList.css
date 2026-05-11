@@ -228,6 +228,11 @@
     /* Green for Completed/Answered */
 }
 
+.status-badge.reported {
+    background-color: #dc2626;
+    /* Red for Reported */
+}
+
 /* Pagination controls */
 .pagination {
     padding: 1rem;

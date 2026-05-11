@@ -20,6 +20,7 @@ import CVHTManagement from './components/admin/CVHTManagement';
 import QuestionManagement from './components/admin/QuestionManagement';
 import FAQManagement from './components/admin/FAQManagement';
 import AiTraining from './components/admin/AiTraining';
+import ReportsManagement from './components/admin/ReportsManagement';
 
 import Login from './components/auth/Login';
 import './App.css';
@@ -123,6 +124,8 @@ function App() {
           <Route path="question-detail/:id" element={<QuestionDetail />} />
           <Route path="faqs" element={<FAQManagement />} />
           <Route path="ai-training" element={<AiTraining />} />
+          <Route path="reports" element={<ReportsManagement />} />
+          <Route path="conversations/:id" element={<QuestionDetail />} />
         </Route>
 
         {/* Fallback */}

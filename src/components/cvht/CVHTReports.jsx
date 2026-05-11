@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
 import './CVHTDashboard.css';
-import api from '../../services/api';
+import api, { userApi, reportApi } from '../../services/api';
 
 const CVHTReports = () => {
     const { toggleSidebar } = useOutletContext();
@@ -12,26 +12,46 @@ const CVHTReports = () => {
         totalQuestions: 0,
         totalAnswered: 0,
         pendingQuestions: 0,
-        studentsCount: 0
+        studentsCount: 0,
+        weeklyTrend: [0, 0, 0, 0, 0, 0, 0]
     });
     const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
-        api.get('/reports/dashboard')
-            .then(res => {
-                if (res.data && res.data.data) {
-                    setStats(res.data.data);
+        const fetchStats = async () => {
+            try {
+                const pRes = await userApi.getProfile();
+                const profile = pRes.data?.data || pRes.data;
+                const code = profile?.maDinhDanh || profile?.maCv || profile?.username;
+                
+                console.log("Advisor Profile:", profile);
+                console.log("Detected Advisor Code:", code);
+
+                if (code) {
+                    const res = await reportApi.getAdvisorDashboard(code);
+                    console.log("Advisor Stats Response:", res.data);
+                    if (res.data && res.data.data) {
+                        const data = res.data.data;
+                        // Tính toán resolutionRate nếu backend chưa trả về hoặc trả về 0
+                        if (data.totalQuestions > 0 && (!data.resolutionRate || data.resolutionRate === 0)) {
+                            data.resolutionRate = Math.round((data.totalAnswered / data.totalQuestions) * 100);
+                        }
+                        setStats(data);
+                    }
+                } else {
+                    console.warn("Could not find Advisor Code in profile");
                 }
-            })
-            .catch(err => console.error(err));
+            } catch (err) {
+                console.error("Failed to fetch advisor stats", err);
+            }
+        };
+        fetchStats();
     }, []);
 
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            const response = await api.get('/reports/export/pdf', {
-                responseType: 'blob'
-            });
+            const response = await reportApi.exportPdf();
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;

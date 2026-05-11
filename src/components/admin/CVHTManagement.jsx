@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, Menu, KeyRound } from 'lucide-react';
+import { User, Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, Menu, KeyRound, Copy } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import '../common/QuestionList.css';
@@ -23,6 +23,7 @@ const CVHTManagement = () => {
     const [createMaCv, setCreateMaCv] = useState('');
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [advisorToReset, setAdvisorToReset] = useState(null);
+    const [resetPasswordInfo, setResetPasswordInfo] = useState(null);
     const [newAccountInfo, setNewAccountInfo] = useState(null);
     const [currentAdvisor, setCurrentAdvisor] = useState(null);
 
@@ -92,6 +93,7 @@ const CVHTManagement = () => {
         setCurrentAdvisor({
             id: cv.maCv,
             hoTen: cv.hoTen || '',
+            email: cv.email || '',
             soDienThoai: cv.soDienThoai || '',
             chuyenMon: cv.chuyenMon || ''
         });
@@ -103,6 +105,7 @@ const CVHTManagement = () => {
         try {
             await api.put(`/admin/users/cvht/${currentAdvisor.id}`, {
                 hoTen: currentAdvisor.hoTen,
+                email: currentAdvisor.email,
                 soDienThoai: currentAdvisor.soDienThoai,
                 chuyenMon: currentAdvisor.chuyenMon
             });
@@ -140,7 +143,8 @@ const CVHTManagement = () => {
         try {
             const res = await api.post(`/admin/accounts/cvht/${advisorToReset}/reset-password`);
             if (res.data.status === 200) {
-                toast.success(`Đặt lại mật khẩu thành công cho ${advisorToReset}! Mật khẩu mới là 123456`);
+                setResetPasswordInfo({ maCv: advisorToReset, ...res.data.data });
+                toast.success('Đặt lại mật khẩu thành công!');
             }
         } catch (error) {
             toast.error('Lỗi đặt lại mật khẩu: ' + (error.response?.data?.message || error.message));
@@ -325,14 +329,59 @@ const CVHTManagement = () => {
                                 <h3 style={{ color: '#166534', margin: '0 0 15px 0', fontSize: '16px' }}>Thành công! Hãy gửi thông tin đăng nhập này cho Cán bộ:</h3>
                                 <div style={{ marginBottom: '10px' }}><strong>Email Đăng Nhập:</strong> {newAccountInfo.email}</div>
                                 <div style={{ marginBottom: '10px' }}><strong>Mật Khẩu Ngẫu Nhiên:</strong></div>
-                                <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
+                                <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center', position: 'relative' }}>
                                     {newAccountInfo.generatedPassword}
+                                    <button 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(newAccountInfo.generatedPassword);
+                                            toast.success('Đã sao chép mật khẩu!');
+                                        }}
+                                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center' }}
+                                        title="Sao chép"
+                                    >
+                                        <Copy size={20} />
+                                    </button>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                                     <button onClick={() => setIsCreateModalOpen(false)} className="btn-primary">Hoàn tất</button>
                                 </div>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Reset Password Info */}
+            {resetPasswordInfo && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '12px', width: '450px', maxWidth: '90%', padding: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ margin: 0, fontSize: '20px', color: '#1f2937' }}>Cấp Lại Mật Khẩu</h2>
+                            <button onClick={() => setResetPasswordInfo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '15px' }}>
+                            <h3 style={{ color: '#166534', margin: '0 0 15px 0', fontSize: '16px' }}>Đã đổi mật khẩu cho CVHT: {resetPasswordInfo.maCv}</h3>
+                            <div style={{ marginBottom: '10px' }}><strong>Email:</strong> {resetPasswordInfo.email}</div>
+                            <div style={{ marginBottom: '10px' }}><strong>Mật Khẩu Mới:</strong></div>
+                            <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center', position: 'relative' }}>
+                                {resetPasswordInfo.generatedPassword}
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(resetPasswordInfo.generatedPassword);
+                                        toast.success('Đã sao chép mật khẩu!');
+                                    }}
+                                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center' }}
+                                    title="Sao chép"
+                                >
+                                    <Copy size={20} />
+                                </button>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                                <button onClick={() => setResetPasswordInfo(null)} className="btn-primary">Hoàn tất</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -357,6 +406,16 @@ const CVHTManagement = () => {
                                     required
                                     value={currentAdvisor.hoTen}
                                     onChange={(e) => setCurrentAdvisor({ ...currentAdvisor, hoTen: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none' }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>Email</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={currentAdvisor.email || ''}
+                                    onChange={(e) => setCurrentAdvisor({ ...currentAdvisor, email: e.target.value })}
                                     style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none' }}
                                 />
                             </div>

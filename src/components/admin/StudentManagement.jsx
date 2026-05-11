@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Users, Search, Plus, Edit2, Trash2, X, AlertCircle, ChevronLeft, ChevronRight, Menu, KeyRound
+    Users, Search, Plus, Edit2, Trash2, X, AlertCircle, ChevronLeft, ChevronRight, Menu, KeyRound, Copy
 } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -350,8 +350,18 @@ const StudentManagement = () => {
                                 <h3 style={{ color: '#166534', margin: '0 0 15px 0', fontSize: '16px' }}>Thành công! Hãy gửi thông tin đăng nhập này cho SV:</h3>
                                 <div style={{ marginBottom: '10px' }}><strong>Email Đăng Nhập:</strong> {newAccountInfo.email}</div>
                                 <div style={{ marginBottom: '10px' }}><strong>Mật Khẩu Ngẫu Nhiên:</strong></div>
-                                <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
+                                <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center', position: 'relative' }}>
                                     {newAccountInfo.generatedPassword}
+                                    <button 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(newAccountInfo.generatedPassword);
+                                            toast.success('Đã sao chép mật khẩu!');
+                                        }}
+                                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center' }}
+                                        title="Sao chép"
+                                    >
+                                        <Copy size={20} />
+                                    </button>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                                     <button onClick={() => setIsCreateModalOpen(false)} className="btn-primary">Hoàn tất</button>
@@ -376,8 +386,18 @@ const StudentManagement = () => {
                             <h3 style={{ color: '#166534', margin: '0 0 15px 0', fontSize: '16px' }}>Đã đổi mật khẩu cho SV: {resetPasswordInfo.maSv}</h3>
                             <div style={{ marginBottom: '10px' }}><strong>Email:</strong> {resetPasswordInfo.email}</div>
                             <div style={{ marginBottom: '10px' }}><strong>Mật Khẩu Mới:</strong></div>
-                            <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
+                            <div style={{ marginBottom: '10px', fontSize: '18px', padding: '10px', backgroundColor: '#fff', border: '1px dashed #22c55e', color: '#000', fontWeight: 'bold', textAlign: 'center', position: 'relative' }}>
                                 {resetPasswordInfo.generatedPassword}
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(resetPasswordInfo.generatedPassword);
+                                        toast.success('Đã sao chép mật khẩu!');
+                                    }}
+                                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center' }}
+                                    title="Sao chép"
+                                >
+                                    <Copy size={20} />
+                                </button>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                                 <button onClick={() => setResetPasswordInfo(null)} className="btn-primary">Hoàn tất</button>
