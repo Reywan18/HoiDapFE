@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Accessibility, Key, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
-import buildingImg from '../../assets/Ảnh_bìa_tlu.png';
 import api, { authApi } from '../../services/api';
 
 // SVG Icon for Microsoft/Office (simplified)
@@ -24,7 +23,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     // For account menu
     const [activeMenu, setActiveMenu] = useState(null);
 
@@ -38,8 +37,8 @@ const Login = () => {
             setError('Vui lòng nhập email');
             return;
         }
-        if (!trimmedEmail.endsWith('@thanglong.edu.vn')) {
-            setError('Tài khoản bắt buộc phải có đuôi @thanglong.edu.vn');
+        if (!trimmedEmail.endsWith('@a.edu.vn')) {
+            setError('Tài khoản bắt buộc phải có đuôi @a.edu.vn');
             return;
         }
         setError('');
@@ -59,7 +58,7 @@ const Login = () => {
             while (base64.length % 4) {
                 base64 += '=';
             }
-            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
             return JSON.parse(jsonPayload);
@@ -85,7 +84,7 @@ const Login = () => {
 
             if (response.data && response.data.token) {
                 const token = response.data.token;
-                
+
                 // Decode token to get role
                 const decoded = parseJwt(token);
                 let role = 'student';
@@ -117,17 +116,17 @@ const Login = () => {
     const handleFinalizeLogin = (remember) => {
         localStorage.setItem('token', pendingToken);
         localStorage.setItem('role', pendingRole);
-        
+
         const decoded = parseJwt(pendingToken);
         if (decoded && decoded.sub) localStorage.setItem('userEmail', decoded.sub);
 
-        const newAccount = { 
-            email, 
+        const newAccount = {
+            email,
             name: decoded?.name || decoded?.hoTen || email.split('@')[0],
             remember,
             token: remember ? pendingToken : null
         };
-        
+
         const updatedAccounts = savedAccounts.filter(acc => acc.email !== email);
         updatedAccounts.unshift(newAccount);
         setSavedAccounts(updatedAccounts);
@@ -145,27 +144,18 @@ const Login = () => {
                 <div className="ms-background-shape"></div>
 
                 <div className="ms-login-card">
-                    <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Logo_Đại_học_Thăng_Long.png"
-                        alt="TLU Logo"
-                        className="ms-logo"
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.style.display = 'none';
-                        }}
-                    />
 
                     {step === 'accounts' ? (
                         <>
                             <div className="ms-title" style={{ marginBottom: '24px' }}>Chọn một tài khoản</div>
-                            
+
                             <div className="ms-accounts-list">
                                 {savedAccounts.map((acc, index) => (
                                     <div key={index} className="ms-account-item" onClick={() => {
                                         if (acc.remember && acc.token) {
                                             const decoded = parseJwt(acc.token);
                                             const isExpired = decoded && decoded.exp && (decoded.exp * 1000 < Date.now());
-                                            
+
                                             if (isExpired || !decoded) {
                                                 setEmail(acc.email);
                                                 setStep('password');
@@ -207,11 +197,11 @@ const Login = () => {
                                         }}>
                                             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                                         </div>
-                                        
+
                                         {activeMenu === acc.email && (
                                             <div className="ms-account-menu" onClick={(e) => e.stopPropagation()}>
                                                 <div className="ms-account-menu-item" onClick={() => {
-                                                    const newAccounts = savedAccounts.map(a => 
+                                                    const newAccounts = savedAccounts.map(a =>
                                                         a.email === acc.email ? { ...a, remember: false, token: null } : a
                                                     );
                                                     setSavedAccounts(newAccounts);
@@ -229,7 +219,7 @@ const Login = () => {
                                         )}
                                     </div>
                                 ))}
-                                
+
                                 <div className="ms-account-item ms-add-account" onClick={() => {
                                     setEmail('');
                                     setStep('email');
@@ -247,7 +237,7 @@ const Login = () => {
                     ) : step === 'email' ? (
                         <>
                             <div className="ms-title">Đăng nhập</div>
-                            
+
                             {error && <div style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
 
                             <div className="ms-input-container">
@@ -279,7 +269,7 @@ const Login = () => {
                             <div style={{ fontSize: '15px', color: '#1b1b1b', marginBottom: '16px', marginTop: '16px' }}>
                                 Thực hiện việc này để giảm số lần bạn được yêu cầu đăng nhập.
                             </div>
-                            
+
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', cursor: 'pointer', fontSize: '14px' }}>
                                 <input type="checkbox" defaultChecked />
                                 Không hiển thị lại thông báo này
@@ -341,28 +331,10 @@ const Login = () => {
     // Initial TLU Login Screen
     return (
         <div className="login-container">
-            {/* Left Side: Image */}
-            <div className="login-banner">
-                <img
-                    src={buildingImg}
-                    alt="Thang Long University"
-                />
-            </div>
-
             {/* Right Side: Form */}
             <div className="login-form-container">
                 <div className="uni-header">
-                    {/* Placeholder Logo */}
-                    <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Logo_Đại_học_Thăng_Long.png"
-                        alt="TLU Logo"
-                        className="uni-logo"
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.style.display = 'none';
-                        }} // Hide if fails to load
-                    />
-                    <div className="uni-title">TRƯỜNG ĐẠI HỌC THĂNG LONG</div>
+                    <div className="uni-title">TRƯỜNG ĐẠI HỌC</div>
                     <div className="portal-title">CỔNG THÔNG TIN ĐÀO TẠO</div>
                 </div>
 
@@ -379,7 +351,7 @@ const Login = () => {
                 </div>
 
                 <div className="login-footer">
-                    @Copyright 2022 Trường Đại Học Thăng Long | All Rights Reserved Developed by PSC
+                    @Copyright 2022 Trường Đại Học  | All Rights Reserved Developed by PSC
                 </div>
 
                 <button className="floating-access-btn">

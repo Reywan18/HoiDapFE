@@ -10,7 +10,7 @@ const Chatbot = () => {
         {
             id: 1,
             role: 'bot',
-            content: 'Chào bạn! Mình là Trợ lý AI của Đại học Thăng Long. Hỏi mình bất cứ điều gì về lịch học, quy chế hoặc thủ tục nhé!',
+            content: 'Chào bạn! Mình là Trợ lý AI của Trường Đại học. Hỏi mình bất cứ điều gì về lịch học, quy chế hoặc thủ tục nhé!',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
     ]);
@@ -114,63 +114,63 @@ const Chatbot = () => {
                     </div>
                 </div>
 
-            <div className="chatbot-messages-area">
-                <div className="messages-stream">
-                    {messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            className={`message-wrapper ${msg.role === 'user' ? 'user-wrapper' : 'bot-wrapper'}`}
-                        >
-                            <div className={`message-avatar ${msg.role}`}>
-                                {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
-                            </div>
-                            <div className="message-content-container">
-                                <div className={`message-bubble ${msg.role} ${msg.isError ? 'bubble-error' : ''}`}>
-                                    <span className="message-text">{msg.content}</span>
+                <div className="chatbot-messages-area">
+                    <div className="messages-stream">
+                        {messages.map((msg) => (
+                            <div
+                                key={msg.id}
+                                className={`message-wrapper ${msg.role === 'user' ? 'user-wrapper' : 'bot-wrapper'}`}
+                            >
+                                <div className={`message-avatar ${msg.role}`}>
+                                    {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
                                 </div>
-                                <span className="message-time">{msg.timestamp}</span>
+                                <div className="message-content-container">
+                                    <div className={`message-bubble ${msg.role} ${msg.isError ? 'bubble-error' : ''}`}>
+                                        <span className="message-text">{msg.content}</span>
+                                    </div>
+                                    <span className="message-time">{msg.timestamp}</span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
 
-                    {isTyping && (
-                        <div className="message-wrapper bot-wrapper">
-                            <div className="message-avatar bot">
-                                <Bot size={18} />
-                            </div>
-                            <div className="message-content-container">
-                                <div className="message-bubble bot typing-indicator">
-                                    <div className="typing-dot"></div>
-                                    <div className="typing-dot"></div>
-                                    <div className="typing-dot"></div>
+                        {isTyping && (
+                            <div className="message-wrapper bot-wrapper">
+                                <div className="message-avatar bot">
+                                    <Bot size={18} />
+                                </div>
+                                <div className="message-content-container">
+                                    <div className="message-bubble bot typing-indicator">
+                                        <div className="typing-dot"></div>
+                                        <div className="typing-dot"></div>
+                                        <div className="typing-dot"></div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                    <div ref={messagesEndRef} />
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
                 </div>
-            </div>
 
-            <div className="chatbot-input-area">
-                <form className="chatbot-input-form" onSubmit={handleSendMessage}>
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        className="chatbot-text-input"
-                        placeholder="Nhập câu hỏi của bạn (VD: Sinh viên nghỉ bao nhiêu buổi thì cấm thi?)"
-                        value={inputQuery}
-                        onChange={(e) => setInputQuery(e.target.value)}
-                        disabled={isTyping}
-                    />
-                    <button
-                        type="submit"
-                        className={`chatbot-send-btn ${!inputQuery.trim() || isTyping ? 'disabled' : ''}`}
-                        disabled={!inputQuery.trim() || isTyping}
-                    >
-                        {isTyping ? <Loader2 className="spinning" size={20} /> : <Send size={20} />}
-                    </button>
-                </form>
-            </div>
+                <div className="chatbot-input-area">
+                    <form className="chatbot-input-form" onSubmit={handleSendMessage}>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            className="chatbot-text-input"
+                            placeholder="Nhập câu hỏi của bạn"
+                            value={inputQuery}
+                            onChange={(e) => setInputQuery(e.target.value)}
+                            disabled={isTyping}
+                        />
+                        <button
+                            type="submit"
+                            className={`chatbot-send-btn ${!inputQuery.trim() || isTyping ? 'disabled' : ''}`}
+                            disabled={!inputQuery.trim() || isTyping}
+                        >
+                            {isTyping ? <Loader2 className="spinning" size={20} /> : <Send size={20} />}
+                        </button>
+                    </form>
+                </div>
             </div>
         </main>
     );

@@ -74,7 +74,7 @@ const CVHTManagement = () => {
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         try {
-            const computedEmail = `${createMaCv.toLowerCase()}@thanglong.edu.vn`;
+            const computedEmail = `${createMaCv.toLowerCase()}@a.edu.vn`;
             const res = await api.post('/admin/accounts/cvht', {
                 maDinhDanh: createMaCv.toUpperCase(),
                 email: computedEmail
@@ -312,7 +312,7 @@ const CVHTManagement = () => {
                                     />
                                     {createMaCv && (
                                         <p style={{ fontSize: '13px', color: '#059669', marginTop: '8px', fontWeight: '500' }}>
-                                            Email tạo ra: {createMaCv.toLowerCase()}@thanglong.edu.vn
+                                            Email tạo ra: {createMaCv.toLowerCase()}@a.edu.vn
                                         </p>
                                     )}
                                     <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>

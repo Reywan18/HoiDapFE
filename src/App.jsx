@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 import Sidebar from './components/layout/Sidebar';
@@ -25,14 +25,43 @@ import ReportsManagement from './components/admin/ReportsManagement';
 import Login from './components/auth/Login';
 import './App.css';
 
+const parseJwt = (token) => {
+  try {
+      const base64Url = token.split('.')[1];
+      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+          base64 += '=';
+      }
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+  } catch (e) {
+      return null;
+  }
+};
+
+const isTokenValid = (token) => {
+  if (!token || token === 'null' || token === 'undefined') return false;
+  const decoded = parseJwt(token);
+  if (!decoded || !decoded.exp) return false;
+  return (decoded.exp * 1000) > Date.now();
+};
+
 const ProtectedRoute = ({ children, allowedRole }) => {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  if (!token) return <Navigate to="/login" replace />;
-  if (allowedRole && role !== allowedRole) {
-    return <Navigate to={role === 'cvht' ? '/cvht' : '/sinhvien'} replace />;
+  if (!isTokenValid(token)) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    return <Navigate to="/login" replace />;
   }
+  
+  if (allowedRole && role !== allowedRole) {
+    return <Navigate to={role === 'admin' ? '/admin' : role === 'cvht' ? '/cvht' : '/sinhvien'} replace />;
+  }
+  
   return children;
 };
 
@@ -51,32 +80,24 @@ const MainLayout = () => {
   );
 };
 
+const RootRoute = () => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
+  if (isTokenValid(token) && role) {
+      if (role === 'admin') return <Navigate to="/admin" replace />;
+      if (role === 'cvht') return <Navigate to="/cvht" replace />;
+      return <Navigate to="/sinhvien" replace />;
+  }
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Chỉ check cơ bản để tự động redirect nếu ở gốc
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-
-    if (token && role && location.pathname === '/') {
-      if (role === 'admin') {
-        window.location.replace('/admin');
-      } else if (role === 'cvht') {
-        window.location.replace('/cvht');
-      } else {
-        window.location.replace('/sinhvien');
-      }
-    } else if (!token && location.pathname !== '/login') {
-      window.location.replace('/login');
-    }
-  }, [location]);
-
   return (
     <>
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<RootRoute />} />
         <Route path="/login" element={<Login />} />
 
         {/* Routes của Sinh Viên */}
@@ -115,7 +136,6 @@ function App() {
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="dashboard" replace />} />
-          {/* Placeholder components, we will implement these shortly */}
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="classes" element={<ClassManagement />} />
           <Route path="students" element={<StudentManagement />} />

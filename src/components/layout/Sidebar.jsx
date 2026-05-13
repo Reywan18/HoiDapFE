@@ -28,13 +28,13 @@ const Sidebar = ({ isOpen, onClose }) => {
                 }).join(''));
 
                 const payload = JSON.parse(jsonPayload);
-                const displayName = (role === 'admin') 
-                    ? "Quản trị viên" 
+                const displayName = (role === 'admin')
+                    ? "Quản trị viên"
                     : (payload.hoTen || payload.name || (role === 'cvht' ? "Cố vấn học tập" : "Sinh viên"));
 
                 setUserData({
                     name: displayName,
-                    role: role === 'admin' ? "Hệ thống" : (role === 'cvht' ? "Giảng viên" : "Đại học Thăng Long")
+                    role: role === 'admin' ? "Hệ thống" : (role === 'cvht' ? "Giảng viên" : "Đại học")
                 });
             } catch (e) {
                 console.error("Token decode error", e);
@@ -104,21 +104,21 @@ const Sidebar = ({ isOpen, onClose }) => {
                     </div>
                 </div>
 
-            <div className="user-profile">
-                <div className="avatar">
-                    <img 
-                        src={`https://ui-avatars.com/api/?name=${userData.name.replace(/ /g, '+')}&background=${role === 'cvht' ? '0284c7' : 'random'}&color=fff`} 
-                        alt="User" 
-                    />
+                <div className="user-profile">
+                    <div className="avatar">
+                        <img
+                            src={`https://ui-avatars.com/api/?name=${userData.name.replace(/ /g, '+')}&background=${role === 'cvht' ? '0284c7' : 'random'}&color=fff`}
+                            alt="User"
+                        />
+                    </div>
+                    <div className="user-info">
+                        <h3 className="user-name">{userData.name}</h3>
+                        <p className="user-role">{userData.role}</p>
+                    </div>
                 </div>
-                <div className="user-info">
-                    <h3 className="user-name">{userData.name}</h3>
-                    <p className="user-role">{userData.role}</p>
-                </div>
-            </div>
 
-            <nav className="sidebar-nav">
-                {navItems.map((item) => (
+                <nav className="sidebar-nav">
+                    {navItems.map((item) => (
                         <Link
                             key={item.id}
                             to={item.to}
@@ -130,28 +130,29 @@ const Sidebar = ({ isOpen, onClose }) => {
                             <item.icon size={20} />
                             <span>{item.label}</span>
                         </Link>
-                ))}
-            </nav>
+                    ))}
+                </nav>
 
-            <div className="sidebar-footer">
-                <button className="logout-btn" onClick={handleLogout}>
-                    <LogOut size={20} style={{ marginRight: '0.5rem' }} />
-                    <span>Đăng xuất</span>
-                </button>
-            </div>
+                <div className="sidebar-footer">
+                    <button className="logout-btn" onClick={handleLogout}>
+                        <LogOut size={20} style={{ marginRight: '0.5rem' }} />
+                        <span>Đăng xuất</span>
+                    </button>
+                </div>
 
-            <ConfirmModal 
-                isOpen={isLogoutModalOpen}
-                onClose={() => setIsLogoutModalOpen(false)}
-                onConfirm={confirmLogout}
-                title="Xác nhận đăng xuất"
-                message="Bạn có chắc chắn muốn thoát khỏi hệ thống không?"
-                confirmText="Đăng xuất"
-                type="danger"
-            />
+                <ConfirmModal
+                    isOpen={isLogoutModalOpen}
+                    onClose={() => setIsLogoutModalOpen(false)}
+                    onConfirm={confirmLogout}
+                    title="Xác nhận đăng xuất"
+                    message="Bạn có chắc chắn muốn thoát khỏi hệ thống không?"
+                    confirmText="Đăng xuất"
+                    type="danger"
+                />
             </aside>
 
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media (max-width: 768px) {
                     .mobile-close-btn { display: block !important; }
                 }

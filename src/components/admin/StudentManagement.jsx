@@ -85,7 +85,7 @@ const StudentManagement = () => {
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         try {
-            const computedEmail = `${createMaSv.toLowerCase()}@thanglong.edu.vn`;
+            const computedEmail = `${createMaSv.toLowerCase()}@a.edu.vn`;
             const res = await api.post('/admin/accounts/student', {
                 maDinhDanh: createMaSv.toUpperCase(),
                 email: computedEmail
@@ -333,7 +333,7 @@ const StudentManagement = () => {
                                     />
                                     {createMaSv && (
                                         <p style={{ fontSize: '13px', color: '#059669', marginTop: '8px', fontWeight: '500' }}>
-                                            Email tạo ra: {createMaSv.toLowerCase()}@thanglong.edu.vn
+                                            Email tạo ra: {createMaSv.toLowerCase()}@a.edu.vn
                                         </p>
                                     )}
                                     <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>

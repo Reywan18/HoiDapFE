@@ -31,6 +31,18 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 // Interceptor for admin instance
 adminInstance.interceptors.request.use(
     (config) => {
@@ -41,6 +53,18 @@ adminInstance.interceptors.request.use(
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+adminInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
 );
 
 // Auth APIs (Using 8080)
